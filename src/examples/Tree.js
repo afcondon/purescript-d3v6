@@ -1,13 +1,19 @@
 "use strict";
 
 
-exports.chart = function (data) {
-  var data = d3.hierarchy(data.json())
-      .sort((a, b) => d3.ascending(a.data.name, b.data.name))
+exports.chartFFI = element => width => height => data => {
+  var treeH = d3.hierarchy(JSON.parse(data))
+                .sort((a, b) => d3.ascending(a.data.name, b.data.name))
 
-  const root = tree(data);
+  var radius = width / 2
   
-  const svg = d3.create("svg");
+  var tree = d3.tree()
+                .size([2 * Math.PI, radius])
+                .separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth)
+
+  const root = tree(treeH);
+  
+  const svg = d3.selectAll(element).append("svg")
 
   svg.append("g")
       .attr("fill", "none")
@@ -52,5 +58,5 @@ exports.chart = function (data) {
     .clone(true).lower()
       .attr("stroke", "white");
 
-  return svg.attr("viewBox", autoBox).node();
+  // return svg.attr("viewBox", autoBox).node();
 }

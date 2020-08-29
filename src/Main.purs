@@ -33,8 +33,8 @@ main = launchAff_ do -- Aff
   widthHeight <- liftEffect getWindowWidthHeight
   forceJSON <- get ResponseFormat.string "http://localhost:1234/miserables.json"
   let forceData = renderUsing (Force.chart widthHeight) forceJSON
-  -- treeJSON <- get ResponseFormat.string "http://localhost:1234/miserables.json"
-  -- let treeData = renderUsing Tree.chart treeJSON
+  treeJSON <- get ResponseFormat.string "http://localhost:1234/flare-2.json"
+  let treeData = renderUsing (Tree.chart widthHeight) treeJSON
   let _ = Minimal.chart 2
   liftEffect $ log "🍝"
 

@@ -48,7 +48,7 @@ exports.chartFFI = element => width => height => data => {
 
   return svg.node();
 }
-
+              
 var scale = d3.scaleOrdinal(d3.schemeCategory10);
 
 var drag = function (simulation) {
