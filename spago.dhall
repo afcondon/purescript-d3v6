@@ -4,7 +4,8 @@ You can edit this file as you like.
 -}
 { name = "my-project"
 , dependencies =
-  [ "arrays"
+  [ "affjax"
+  , "arrays"
   , "console"
   , "effect"
   , "exists"
@@ -14,6 +15,7 @@ You can edit this file as you like.
   , "nullable"
   , "psci-support"
   , "web-events"
+  , "web-html"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
