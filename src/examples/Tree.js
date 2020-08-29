@@ -20,7 +20,10 @@ exports.chartFFI = element => width => height => data => {
 
   const root = tree(treeH);
   
-  const svg = d3.selectAll(element).append("svg").attr("viewBox", [-width/2, -height/2, width, height])
+  const svg = 
+    d3.selectAll(element)
+      .append("svg")
+      .attr("viewBox", [-width/2, -height/2, width, height])
 
   svg.append("g")
       .attr("fill", "none")
