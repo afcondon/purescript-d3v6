@@ -3619,9 +3619,16 @@ var PS = {};
                   .size([2 * Math.PI, radius])
                   .separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth)
 
+    function autoBox() {
+      document.body.appendChild(this);
+      const {x, y, width, height} = this.getBBox();
+      document.body.removeChild(this);
+      return [x, y, width, height];
+    }
+
     const root = tree(treeH);
   
-    const svg = d3.selectAll(element).append("svg")
+    const svg = d3.selectAll(element).append("svg").attr("viewBox", [-width/2, -height/2, width, height])
 
     svg.append("g")
         .attr("fill", "none")
@@ -3665,8 +3672,6 @@ var PS = {};
         .text(d => d.data.name)
       .clone(true).lower()
         .attr("stroke", "white");
-
-    // return svg.attr("viewBox", autoBox).node();
   }
 })(PS["D3.Example.Tree"] = PS["D3.Example.Tree"] || {});
 (function($PS) {
