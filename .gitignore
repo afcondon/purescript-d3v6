@@ -8,3 +8,4 @@ node_modules
 output
 /.spago
 .DS_Store
+/dist/bundle.js

@@ -29,7 +29,9 @@ exports.chartFFI = element => width => height => data => {
     .join("circle")
       .attr("r", 5)
       .attr("fill", d => scale(d.group))
-      .call(drag(simulation));
+
+
+  node.call(drag(simulation));
 
   simulation.on("tick", () => {
     link
