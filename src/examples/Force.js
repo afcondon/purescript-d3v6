@@ -31,9 +31,6 @@ exports.chartFFI = element => width => height => data => {
       .attr("fill", d => scale(d.group))
       .call(drag(simulation));
 
-  node.append("title")
-      .text(d => d.id);
-
   simulation.on("tick", () => {
     link
         .attr("x1", d => d.source.x)
@@ -45,6 +42,7 @@ exports.chartFFI = element => width => height => data => {
         .attr("cx", d => d.x)
         .attr("cy", d => d.y);
   });
+
 
   return svg.node();
 }
