@@ -14,16 +14,16 @@
 
   make selection "div#chart" 
       append 'svg' [props] [
-          append 'g' for links [props] -- and export selection
-            selectAll
-            data bind links
-            join 
-              enter lines [props] -- static props can be promoted to 'g'
-        , append 'g' for nodes [props] -- and export selection
-            selectAll
-            data bind nodes
-            join 
-              enter circles [props]
+          append 'g' "links" [props] -- and export selection
+            insert Line links
+              ( Join  (Enter lines [props]) -- static props can be promoted to 'g'
+                      (Update [])
+                      (Exit []) )
+        , append 'g' "nodes" [props] -- and export selection
+            insert Circle nodes
+              ( Join (Enter circles [props])
+                     (Update [])
+                     (Exit []) )
                 call custom drag simulation -- causes simulation to wake up too
       ]
 ```

@@ -26,13 +26,13 @@ exports.chartFFI = element => width => height => data => {
       .attr("viewBox", [-width/2, -height/2, width, height])
 
   svg.append("g")
+    .selectAll("path")
+    .data(root.links())
+    .join("path")
       .attr("fill", "none")
       .attr("stroke", "#555")
       .attr("stroke-opacity", 0.4)
       .attr("stroke-width", 1.5)
-    .selectAll("path")
-    .data(root.links())
-    .join("path")
       .attr("d", d3.linkRadial()
           .angle(d => d.x)
           .radius(d => d.y));
