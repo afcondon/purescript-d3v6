@@ -31,3 +31,8 @@ Simple values probably not a problem but all the `.attr("foo", d => d.bar * 2)` 
 
 Tentative decision - try to take the stuff from previous attempt first
 
+## Indexed Monad types
+  * Open Selection (such as `d3.selectAll('div#hook').append('circle')`), ie starting with d3 itself and going up to the point where you do the data/join
+  * Operating Selection (from data.join) -> can produce a Transition
+  * Transition -> can yield back to the selection
+  
