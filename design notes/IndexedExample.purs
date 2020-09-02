@@ -1,4 +1,4 @@
-module Data.Viz where
+module Data.Viz.Indexed where
 
 import Data.List as L
 

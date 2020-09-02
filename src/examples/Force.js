@@ -24,10 +24,10 @@ exports.chartFFI = element => width => height => data => {
   const node = svg.append("g")
       .attr("stroke", "#fff")
       .attr("stroke-width", 1.5)
+      .attr("r", 5)
     .selectAll("circle")
     .data(nodes)
     .join("circle")
-      .attr("r", 5)
       .attr("fill", d => scale(d.group))
 
 
