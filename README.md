@@ -12,10 +12,42 @@ This go round the plan is
 
 # status as of this commit
 
-This is the baseline for experimentation, there is no DSL at all, just two D3 scripts living in PureScript FFI files and called directly from Main.
+There is now a new "D3.Base" and a "NewSyntax.purs" which tries to use it to create an abstract version of the Force example. Currently not type-checking because little lambdas in the attribute setters won't type check. Probably needs a Variant type for the Attributes lists...just not sure how that works with interpretation (it would be easy enough with compilation, i guess)
 
-The goal from here is to replicate the functionality of this baseline using DSL so that all the FFI code is abstracted into some kind of wrapper library. 
+# example of current syntax model
 
+```purescript
+chargeForce = Force "charge" ForceMany
+centerForce width height = Force "center" ForceCenter (width / 2) (height / 2)
+
+simulation =
+  Simulation { 
+      label: "simulation"
+    , config: defaultConfigSimulation
+    , forces: [ chargeForce, centerForce 800.0 900.0 ] 
+    , tick: identity
+    , drag: const unit
+  }
+
+-- minimal definition for now, need to factor in things added by simulation such as Vx, Vy
+type Node = { x :: Number, y :: Number }
+type Model = { links :: Array Link, nodes :: Array Node }
+
+chart :: Tuple Number Number -> Model -> Selection Model
+chart (Tuple width height) model = 
+  select "div#chart" [] [
+    appendNamed "svg" Svg [ staticArrayNumberAttr "viewBox" [0.0,0.0,width,height] ] 
+      -- children of "svg"
+      [ appendNamed "link" Group
+        [ staticStringAttr "stroke" "#999", staticNumberAttr "stroke-opacity" 0.6 ] 
+        (join linkEnter Nothing Nothing) 
+        
+      , appendNamed "node" Group
+        [ staticStringAttr "stroke" "#ff", staticNumberAttr "stroke-opacity" 1.5 ]
+        (join nodeEnter Nothing Nothing)
+      ]
+  ]
+```
 
 # Work in Progress / Design ideas and decisions
 
