@@ -1,12 +1,16 @@
 module D3.Base (
-  select, append, appendNamed, join, transition, transitionNamed
+    select, append, appendNamed, join, transition, transitionNamed
+  , Datum, Attr(..), staticArrayNumberAttr, staticNumberAttr, staticStringAttr
+  , Selection, Element(..)
+  , Force(..), ForceType(..), Link, IdFn, ID, Label
+  , Simulation(..), SimulationConfig, defaultConfigSimulation
 ) where
 
 import Prelude
 
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Tuple (Tuple(..))
-import Math (sqrt)
+
+foreign import data Datum :: Type
 
 type Label = String
 type Selector = String
@@ -20,9 +24,10 @@ type SimulationConfig = {
     , alphaDecay    :: Number
     , velocityDecay :: Number
 }
+defaultConfigSimulation :: SimulationConfig
 defaultConfigSimulation = { 
-      alpha        : 1
-    , alphaTarget  : 0
+      alpha        : 1.0
+    , alphaTarget  : 0.0
     , alphaMin     : 0.0001
     , alphaDecay   : 0.0228
     , velocityDecay: 0.4
@@ -93,7 +98,7 @@ appendNamed label element attributes children =
   Append { label: Just label, element, attributes, children }
 
 join :: forall model. JoinFn model -> Maybe (JoinFn model) -> Maybe (JoinFn model) -> Selection model
-join enter maybeUpdate maybeExit = [Join { enter, update, exit }]
+join enter maybeUpdate maybeExit = Join { enter, update, exit }
   where
     update = fromMaybe (const unit) maybeUpdate
     exit   = fromMaybe (const unit) maybeExit
@@ -109,20 +114,20 @@ transitionNamed label duration attributes =
 type JoinFn model = Selection model -> Unit
 
 data Attr =
-    StringAttr String (datum -> Number -> String)
-  | NumberAttr String (datum -> Number -> Number)
-  | ArrayNumberAttr String (datum -> Number -> Array Number)
+    StringAttr String (Datum -> Number -> String)
+  | NumberAttr String (Datum -> Number -> Number)
+  | ArrayNumberAttr String (Datum -> Number -> Array Number)
 
  -- just discard datum and index for now in these cases
  -- TODO suboptimal, we actually want to detect static attrs and hoist
  -- to parent so as not to pollute the DOM with a million duplicate attrs
-staticStringAttr :: forall datum. String -> String -> Attr datum
+staticStringAttr :: String -> String -> Attr
 staticStringAttr name string = StringAttr name (\_ _ -> string)
 
-staticNumberAttr :: forall datum. String -> Number -> Attr datum
+staticNumberAttr :: String -> Number -> Attr
 staticNumberAttr name number = NumberAttr name (\_ _-> number) -- just discard datum and index
 
-staticArrayNumberAttr :: forall datum. String -> Array Number -> Attr datum
+staticArrayNumberAttr :: String -> Array Number -> Attr
 staticArrayNumberAttr name numbers = ArrayNumberAttr name (\_ _-> numbers) -- just discard datum and index
 
 
