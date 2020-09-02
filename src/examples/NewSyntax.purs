@@ -9,18 +9,21 @@ import Math (sqrt)
 
 chargeForce = Force "charge" ForceMany
 centerForce width height = Force "center" ForceCenter (width / 2) (height / 2)
-centerForce' = centerForce 800 800
 
 simulation =
   Simulation { 
       label: "simulation"
     , config: defaultConfigSimulation
-    , forces: [ chargeForce, centerForce ] 
+    , forces: [ chargeForce, centerForce 800.0 900.0 ] 
     , tick: identity
     , drag: const unit
   }
 
-chart :: forall model. Tuple Number Number -> model -> Selection model
+-- minimal definition for now, need to factor in things added by simulation such as Vx, Vy
+type Node = { x :: Number, y :: Number }
+type Model = { links :: Array Link, nodes :: Array Node }
+
+chart :: Tuple Number Number -> Model -> Selection Model
 chart (Tuple width height) model = 
   select "div#chart" [] [
     appendNamed "svg" Svg [ staticArrayNumberAttr "viewBox" [0.0,0.0,width,height] ] 
@@ -45,14 +48,14 @@ linkEnter = append Line [ NumberAttr "stroke-width" (\d i -> sqrt d.value)]
 -- cannot be visible here, some kind of ugly coerce in the scale function, or using FFI may be required
 nodeEnter = append Circle [ staticNumberAttr "r" 5.0, StringAttr "fill" (\d i -> scale d)]
 
--- | function to build the 
-myTickFunction :: Selection -> Selection -> Array (Tuple Selection (Array Attr) )
+-- | function to build the tick function, quite tricky
+myTickFunction :: Selection Model -> Selection Model -> Array (Tuple (Selection Model) (Array Attr) )
 myTickFunction link node = [
-    Tuple link, [ NumberAttr "x1" (\d i -> d.source.x)
+    Tuple link [ NumberAttr "x1" (\d i -> d.source.x)
                 , NumberAttr "y1" (\d i -> d.source.y)
                 , NumberAttr "x2" (\d i -> d.target.x)
                 , NumberAttr "y2" (\d i -> d.target.y) ]
-  , Tuple node, [ NumberAttr "cx" (\d i -> d.x
+  , Tuple node [ NumberAttr "cx" (\d i -> d.x
  )              , NumberAttr "cy" (\d i -> d.y) ]
 ]
 
