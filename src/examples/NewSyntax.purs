@@ -9,9 +9,12 @@ import Math (sqrt)
 import Prelude (Unit, const, identity, mempty, unit, ($), (/))
 import Unsafe.Coerce (unsafeCoerce)
 
+chargeForce :: Force
 chargeForce = Force "charge" ForceMany
+centerForce :: Number -> Number -> Force
 centerForce width height = Force "center" $ ForceCenter (width / 2.0) (height / 2.0)
 
+simulation :: Simulation
 simulation =
   Simulation { 
       label: "simulation"
@@ -24,11 +27,23 @@ simulation =
 -- minimal definition for now, need to factor in things added by simulation such as Vx, Vy
 type GraphNode = { x :: Number, y :: Number, group :: Number }
 type GraphLink = { id :: ID, source :: ID, target :: ID, value :: Number }
+
+-- after the GraphLink type has been bound in D3 it is changed to the following
+type D3GraphNode = { x :: Number, y :: Number, group :: Number, vx :: Number, vy :: Number, index :: Number }
+type D3GraphLink = { id :: ID, source :: D3GraphNode, target :: D3GraphNode, value :: Number }
+
+-- we give the chart our Model type but behind the scenes it is mutated by D3 and additionally
+-- which projection of the "Model" is active in each Join varies so we can't have both strong
+-- static type representations AND lightweight syntax with JS compatible lambdas
 type Model = { links :: Array GraphLink, nodes :: Array GraphNode }
-castLink :: Datum -> GraphLink
+castLink :: Datum -> D3GraphLink
 castLink = unsafeCoerce
-castNode :: Datum -> GraphNode
+castNode :: Datum -> D3GraphNode
 castNode = unsafeCoerce
+modelLinks :: Model -> SubModel
+modelLinks m = unsafeCoerce $ m.links
+modelNodes :: Model -> SubModel
+modelNodes m = unsafeCoerce $ m.nodes
 
 chart :: Tuple Number Number -> Model -> Selection Model
 chart (Tuple width height) model = 
@@ -37,11 +52,11 @@ chart (Tuple width height) model =
       -- children of "svg"
       [ appendNamed "link" Group
         [ staticStringAttr "stroke" "#999", staticNumberAttr "stroke-opacity" 0.6 ] 
-        [join linkEnter Nothing Nothing]
+        [join modelLinks linkEnter Nothing Nothing]
         
       , appendNamed "node" Group
         [ staticStringAttr "stroke" "#ff", staticNumberAttr "stroke-opacity" 1.5 ]
-        [join nodeEnter Nothing Nothing]
+        [join modelNodes nodeEnter Nothing Nothing]
       ]
 
 type ColorScale = Datum -> String -- TODO replace with better color, ie Web color package
@@ -60,11 +75,11 @@ nodeEnter = mempty $ append Circle [ staticNumberAttr "r" 5.0, StringAttr "fill"
 myTickFunction :: Selection Model-> Selection Model -> Array (Tuple (Selection Model) (Array Attr) )
 myTickFunction link node = [
     Tuple link [ NumberAttr "x1" (\d i -> (castLink d).source.x)
-                , NumberAttr "y1" (\d i -> d.source.y)
-                , NumberAttr "x2" (\d i -> d.target.x)
-                , NumberAttr "y2" (\d i -> d.target.y) ]
-  , Tuple node [ NumberAttr "cx" (\d i -> d.x
- )              , NumberAttr "cy" (\d i -> d.y) ]
+                , NumberAttr "y1" (\d i -> (castLink d).source.y)
+                , NumberAttr "x2" (\d i -> (castLink d).target.x)
+                , NumberAttr "y2" (\d i -> (castLink d).target.y) ]
+  , Tuple node [ NumberAttr "cx" (\d i -> (castNode d).x
+ )              , NumberAttr "cy" (\d i -> (castNode d).y) ]
 ]
 
 -- drag = 

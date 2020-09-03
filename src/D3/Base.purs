@@ -1,6 +1,7 @@
 module D3.Base (
     select, append, appendNamed, join, transition, transitionNamed
-  , Datum, Attr(..), staticArrayNumberAttr, staticNumberAttr, staticStringAttr
+  , Datum, SubModel
+  , Attr(..), staticArrayNumberAttr, staticNumberAttr, staticStringAttr
   , Selection, Element(..)
   , Force(..), ForceType(..), Link, IdFn, ID, Label
   , Simulation(..), SimulationConfig, defaultConfigSimulation
@@ -10,7 +11,12 @@ import Prelude
 
 import Data.Maybe (Maybe(..), fromMaybe)
 
-foreign import data Datum :: Type
+-- | these foreign types allow us to work with some very funky typing without 
+-- | adding tonnes of syntactic noise or type complexity
+-- | The Datum models the (variable / polymorphic) type of the lambdas used in Attr
+foreign import data Datum    :: Type
+-- | The SubModel is that portion of the Model that we give to a particular Join
+foreign import data SubModel :: Type
 
 type Label = String
 type Selector = String
@@ -75,9 +81,10 @@ data Selection model =
   }
   -- d3.selectAll().data().join() pattern
   | Join {
-      enter        :: (Selection model -> Unit)
-    , update       :: (Selection model -> Unit)
-    , exit         :: (Selection model -> Unit)
+      "data"       :: model -> SubModel
+    , enter        :: Selection model -> Unit
+    , update       :: Selection model -> Unit
+    , exit         :: Selection model -> Unit
   }
   | Transition {
       label        :: Maybe String
@@ -97,12 +104,12 @@ appendNamed :: forall model. Label -> Element -> Array Attr -> Array (Selection 
 appendNamed label element attributes children = 
   Append { label: Just label, element, attributes, children }
 
-join :: forall model. 
-             (Selection model -> Unit) -- minimal definition requires only enter
+join :: forall model. (model -> SubModel)
+    ->       (Selection model -> Unit) -- minimal definition requires only enter
     -> Maybe (Selection model -> Unit) -- update is optional
     -> Maybe (Selection model -> Unit) -- exit is optional
     -> Selection model
-join enter maybeUpdate maybeExit = Join { enter, update, exit }
+join projection enter maybeUpdate maybeExit = Join { "data": projection, enter, update, exit }
   where
     -- the optional update and exit can simply be no-ops for now
     update = fromMaybe (const unit) maybeUpdate
