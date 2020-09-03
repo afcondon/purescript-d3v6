@@ -40,24 +40,25 @@ castLink :: Datum -> D3GraphLink
 castLink = unsafeCoerce
 castNode :: Datum -> D3GraphNode
 castNode = unsafeCoerce
-modelLinks :: Model -> SubModel
-modelLinks m = unsafeCoerce $ m.links
-modelNodes :: Model -> SubModel
-modelNodes m = unsafeCoerce $ m.nodes
 
 chart :: Tuple Number Number -> Model -> Selection Model
-chart (Tuple width height) model = 
-  select "div#chart" [] $ singleton $ 
-    appendNamed "svg" Svg [ staticArrayNumberAttr "viewBox" [0.0,0.0,width,height] ] 
-      -- children of "svg"
-      [ appendNamed "link" Group
-        [ staticStringAttr "stroke" "#999", staticNumberAttr "stroke-opacity" 0.6 ] 
-        [join modelLinks linkEnter Nothing Nothing]
-        
-      , appendNamed "node" Group
-        [ staticStringAttr "stroke" "#ff", staticNumberAttr "stroke-opacity" 1.5 ]
-        [join modelNodes nodeEnter Nothing Nothing]
-      ]
+chart (Tuple width height) model =
+  let
+    -- modelLinks :: Model -> SubModel
+    modelLinks m = unsafeCoerce $ m.links
+    -- modelNodes :: Model -> SubModel
+    modelNodes m = unsafeCoerce $ m.nodes
+  in 
+    select "div#chart" [] $ singleton $ 
+      appendNamed "svg" Svg [ staticArrayNumberAttr "viewBox" [0.0,0.0,width,height] ] [
+        appendNamed "link" Group
+          [ staticStringAttr "stroke" "#999", staticNumberAttr "stroke-opacity" 0.6 ] 
+          [join modelLinks linkEnter Nothing Nothing]
+          
+        , appendNamed "node" Group
+          [ staticStringAttr "stroke" "#ff", staticNumberAttr "stroke-opacity" 1.5 ]
+          [join modelNodes nodeEnter Nothing Nothing]
+        ]
 
 type ColorScale = Datum -> String -- TODO replace with better color, ie Web color package
 scale :: ColorScale
