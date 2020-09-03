@@ -35,7 +35,7 @@ defaultConfigSimulation = {
 
 -- | Force Layout core types
 type ID = Int -- TODO this needs to be polymorphic eventually
-type Link = { id :: ID, source :: ID, target :: ID }
+type Link = forall r. { id :: ID, source :: ID, target :: ID | r }
 type IdFn = Link -> ID
 data Force = Force Label ForceType
 data ForceType =
@@ -75,9 +75,9 @@ data Selection model =
   }
   -- d3.selectAll().data().join() pattern
   | Join {
-      enter        :: JoinFn model
-    , update       :: JoinFn model
-    , exit         :: JoinFn model
+      enter        :: (Selection model -> Unit)
+    , update       :: (Selection model -> Unit)
+    , exit         :: (Selection model -> Unit)
   }
   | Transition {
       label        :: Maybe String
@@ -97,9 +97,14 @@ appendNamed :: forall model. Label -> Element -> Array Attr -> Array (Selection 
 appendNamed label element attributes children = 
   Append { label: Just label, element, attributes, children }
 
-join :: forall model. JoinFn model -> Maybe (JoinFn model) -> Maybe (JoinFn model) -> Selection model
+join :: forall model. 
+             (Selection model -> Unit) -- minimal definition requires only enter
+    -> Maybe (Selection model -> Unit) -- update is optional
+    -> Maybe (Selection model -> Unit) -- exit is optional
+    -> Selection model
 join enter maybeUpdate maybeExit = Join { enter, update, exit }
   where
+    -- the optional update and exit can simply be no-ops for now
     update = fromMaybe (const unit) maybeUpdate
     exit   = fromMaybe (const unit) maybeExit
 
@@ -111,11 +116,9 @@ transitionNamed :: forall model. Label -> Number -> Array Attr -> Selection mode
 transitionNamed label duration attributes = 
   Transition { label: Just label, duration, attributes }
 
-type JoinFn model = Selection model -> Unit
-
 data Attr =
-    StringAttr String (Datum -> Number -> String)
-  | NumberAttr String (Datum -> Number -> Number)
+    StringAttr      String (Datum -> Number -> String)
+  | NumberAttr      String (Datum -> Number -> Number)
   | ArrayNumberAttr String (Datum -> Number -> Array Number)
 
  -- just discard datum and index for now in these cases
