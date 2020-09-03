@@ -12,9 +12,11 @@ import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (logShow)
 import Effect.Console (log)
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
+import NewSyntax (chart, simulation)
 
 renderUsing :: forall r. (String -> Unit) -> Either Error { body ∷ String | r } -> Unit
 renderUsing f (Right { body } ) = f body
@@ -30,6 +32,7 @@ getWindowWidthHeight = do
 
 main :: Effect Unit
 main = launchAff_ do -- Aff 
+  logShow $ chart (Tuple 800.0 600.0) { links: [], nodes: [] }
   widthHeight <- liftEffect getWindowWidthHeight
   forceJSON <- get ResponseFormat.string "http://localhost:1234/miserables.json"
   let forceData = renderUsing (Force.chart widthHeight) forceJSON

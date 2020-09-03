@@ -1,4 +1,4 @@
-module NewSyntax where
+module NewSyntax (chart, simulation) where
 
 import D3.Base
 

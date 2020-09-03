@@ -141,4 +141,27 @@ staticArrayNumberAttr :: String -> Array Number -> Attr
 staticArrayNumberAttr name numbers = ArrayNumberAttr name (\_ _-> numbers) -- just discard datum and index
 
 
+instance showSelection :: Show (Selection a) where
+  show (InitialSelect r) = "d3.selectAll(\"" <> r.selector <> "\")" <> show r.attributes <> show r.children
+  show (Append r) = 
+    let prefix = case r.label of
+                  (Just name) -> "const " <> show name
+                  Nothing -> ""
+    in prefix <> ".append(\"" <> show r.element <> "\")" <> show r.attributes <> show r.children
+  show (Join r) = "Join"
+  show (Transition r) = "Transition"
 
+
+instance showAttribute :: Show Attr where
+  show (StringAttr a fn) = ".attr(\"" <> a <> "\", <function>)"
+  show (NumberAttr a fn) = ".attr(\"" <> a <> "\", <function>)"
+  show (ArrayNumberAttr a fn) = ".attr(\"" <> a <> "\", <function>)"
+
+instance showElement :: Show Element where
+  show Svg = "svg"
+  show Group = "g"
+  show Div = "div"
+  show Line = "line"
+  show Circle = "circle"
+  show Path = "path"
+  show Text = "text"
