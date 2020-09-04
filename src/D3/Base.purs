@@ -1,15 +1,14 @@
 module D3.Base (
     select, append, appendNamed, join, transition, transitionNamed
   , Datum, SubModel
-  , Attr(..), staticArrayNumberAttr, staticNumberAttr, staticStringAttr
-  , Selection, Element(..)
+  , Attr(..)
+  , Selection, Element(..), noUpdate, noExit
   , Force(..), ForceType(..), Link, IdFn, ID, Label
   , Simulation(..), SimulationConfig, defaultConfigSimulation
 ) where
 
 import Prelude
-
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe(Maybe(..))
 
 -- | these foreign types allow us to work with some very funky typing without 
 -- | adding tonnes of syntactic noise or type complexity
@@ -82,15 +81,17 @@ data Selection model =
   -- d3.selectAll().data().join() pattern
   | Join {
       "data"       :: model -> SubModel
-    , enter        :: Selection model -> Unit
-    , update       :: Selection model -> Unit
-    , exit         :: Selection model -> Unit
+    , enter        :: Selection model
+    , update       :: Selection model
+    , exit         :: Selection model
   }
   | Transition {
       label        :: Maybe String
     , duration     :: Number
     , attributes   :: Array Attr
   }
+
+  | NullSelection -- used for optional Join functions
 
 select :: forall model. Selector -> Array Attr -> Array (Selection model) -> Selection model 
 select selector attributes children = 
@@ -104,16 +105,15 @@ appendNamed :: forall model. Label -> Element -> Array Attr -> Array (Selection 
 appendNamed label element attributes children = 
   Append { label: Just label, element, attributes, children }
 
+noUpdate = NullSelection
+noExit   = NullSelection
+
 join :: forall model. (model -> SubModel)
-    ->       (Selection model -> Unit) -- minimal definition requires only enter
-    -> Maybe (Selection model -> Unit) -- update is optional
-    -> Maybe (Selection model -> Unit) -- exit is optional
+    -> Selection model -- minimal definition requires only enter
+    -> Selection model -- update is optional
+    -> Selection model -- exit is optional
     -> Selection model
-join projection enter maybeUpdate maybeExit = Join { "data": projection, enter, update, exit }
-  where
-    -- the optional update and exit can simply be no-ops for now
-    update = fromMaybe (const unit) maybeUpdate
-    exit   = fromMaybe (const unit) maybeExit
+join projection enter update exit = Join { "data": projection, enter, update, exit }
 
 transition :: forall model. Number -> Array Attr -> Selection model 
 transition duration attributes = 
@@ -127,35 +127,38 @@ data Attr =
     StringAttr      String (Datum -> Number -> String)
   | NumberAttr      String (Datum -> Number -> Number)
   | ArrayNumberAttr String (Datum -> Number -> Array Number)
-
- -- just discard datum and index for now in these cases
- -- TODO suboptimal, we actually want to detect static attrs and hoist
- -- to parent so as not to pollute the DOM with a million duplicate attrs
-staticStringAttr :: String -> String -> Attr
-staticStringAttr name string = StringAttr name (\_ _ -> string)
-
-staticNumberAttr :: String -> Number -> Attr
-staticNumberAttr name number = NumberAttr name (\_ _-> number) -- just discard datum and index
-
-staticArrayNumberAttr :: String -> Array Number -> Attr
-staticArrayNumberAttr name numbers = ArrayNumberAttr name (\_ _-> numbers) -- just discard datum and index
-
+  | StaticString    String String
+  | StaticNumber    String Number
+  | StaticArrayNumber String (Array Number)
 
 instance showSelection :: Show (Selection a) where
   show (InitialSelect r) = "d3.selectAll(\"" <> r.selector <> "\")" <> show r.attributes <> show r.children
   show (Append r) = 
     let prefix = case r.label of
-                  (Just name) -> "const " <> show name
-                  Nothing -> ""
+                  (Just name) -> "const " <> name <> " = "
+                  Nothing -> "\n"
     in prefix <> ".append(\"" <> show r.element <> "\")" <> show r.attributes <> show r.children
-  show (Join r) = "Join"
-  show (Transition r) = "Transition"
+  show (Join r) = "Join" <> 
+                  show r.enter <>
+                  show r.update <>
+                  show r.exit
+  show (Transition r) = 
+    let prefix = case r.label of
+                  (Just name) -> "const " <> name <> " = "
+                  Nothing -> "\n"
+    in prefix <> ".transition(\"" <> show r.duration <> "\")" <> show r.attributes
+  show NullSelection = ""
 
+enQuote :: String -> String
+enQuote string = "\"" <> string <> "\""
 
 instance showAttribute :: Show Attr where
-  show (StringAttr a fn) = ".attr(\"" <> a <> "\", <function>)"
-  show (NumberAttr a fn) = ".attr(\"" <> a <> "\", <function>)"
-  show (ArrayNumberAttr a fn) = ".attr(\"" <> a <> "\", <function>)"
+  show (StringAttr a fn) = "\n.attr(\"" <> a <> "\", <function>)"
+  show (NumberAttr a fn) = "\n.attr(\"" <> a <> "\", <function>)"
+  show (ArrayNumberAttr a fn) = "\n.attr(\"" <> a <> "\", <function>)"
+  show (StaticString a v) = "\n.attr(\"" <> a <> "\", \"" <> v <> "\")"
+  show (StaticNumber a v) = "\n.attr(\"" <> a <> "\", \"" <> show v <> "\")"
+  show (StaticArrayNumber a v) = "\n.attr(\"" <> a <> "\", \"" <> show v <> "\")"
 
 instance showElement :: Show Element where
   show Svg = "svg"

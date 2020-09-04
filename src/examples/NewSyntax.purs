@@ -3,10 +3,9 @@ module NewSyntax (chart, simulation) where
 import D3.Base
 
 import Data.Array (singleton)
-import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Math (sqrt)
-import Prelude (Unit, const, identity, mempty, unit, ($), (/))
+import Prelude (const, identity, unit, ($), (/))
 import Unsafe.Coerce (unsafeCoerce)
 
 chargeForce :: Force
@@ -36,10 +35,10 @@ type D3GraphLink = { id :: ID, source :: D3GraphNode, target :: D3GraphNode, val
 -- which projection of the "Model" is active in each Join varies so we can't have both strong
 -- static type representations AND lightweight syntax with JS compatible lambdas
 type Model = { links :: Array GraphLink, nodes :: Array GraphNode }
-castLink :: Datum -> D3GraphLink
-castLink = unsafeCoerce
-castNode :: Datum -> D3GraphNode
-castNode = unsafeCoerce
+d3Link :: Datum -> D3GraphLink
+d3Link = unsafeCoerce
+d3Node :: Datum -> D3GraphNode
+d3Node = unsafeCoerce
 
 chart :: Tuple Number Number -> Model -> Selection Model
 chart (Tuple width height) model =
@@ -50,14 +49,14 @@ chart (Tuple width height) model =
     modelNodes m = unsafeCoerce $ m.nodes
   in 
     select "div#chart" [] $ singleton $ 
-      appendNamed "svg" Svg [ staticArrayNumberAttr "viewBox" [0.0,0.0,width,height] ] [
+      appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
         appendNamed "link" Group
-          [ staticStringAttr "stroke" "#999", staticNumberAttr "stroke-opacity" 0.6 ] 
-          [join modelLinks linkEnter Nothing Nothing]
+          [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
+          [join modelLinks linkEnter noUpdate noExit]
           
         , appendNamed "node" Group
-          [ staticStringAttr "stroke" "#ff", staticNumberAttr "stroke-opacity" 1.5 ]
-          [join modelNodes nodeEnter Nothing Nothing]
+          [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
+          [join modelNodes nodeEnter noUpdate noExit]
         ]
 
 type ColorScale = Datum -> String -- TODO replace with better color, ie Web color package
@@ -65,22 +64,22 @@ scale :: ColorScale
 scale _ = "red"
 
 -- we never take a reference to the Join functions enter, update, exit so -> Unit
-linkEnter :: Selection Model -> Unit
-linkEnter = mempty $ append Line [ NumberAttr "stroke-width" (\d i -> sqrt (castLink d).value)]
+linkEnter :: Selection Model
+linkEnter = append Line [ NumberAttr "stroke-width" (\d i -> sqrt (d3Link d).value)] []
 -- TODO note that we are not saying (\d i -> scale d.group) because contents of foreign data Datum
 -- cannot be visible here, some kind of ugly coerce in the scale function, or using FFI may be required
-nodeEnter :: Selection Model -> Unit
-nodeEnter = mempty $ append Circle [ staticNumberAttr "r" 5.0, StringAttr "fill" (\d i -> scale d)]
+nodeEnter :: Selection Model
+nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d i -> scale d)] []
 
 -- | function to build the tick function, quite tricky
 myTickFunction :: Selection Model-> Selection Model -> Array (Tuple (Selection Model) (Array Attr) )
 myTickFunction link node = [
-    Tuple link [ NumberAttr "x1" (\d i -> (castLink d).source.x)
-                , NumberAttr "y1" (\d i -> (castLink d).source.y)
-                , NumberAttr "x2" (\d i -> (castLink d).target.x)
-                , NumberAttr "y2" (\d i -> (castLink d).target.y) ]
-  , Tuple node [ NumberAttr "cx" (\d i -> (castNode d).x
- )              , NumberAttr "cy" (\d i -> (castNode d).y) ]
+    Tuple link [  NumberAttr "x1" (\d i -> (d3Link d).source.x)
+                , NumberAttr "y1" (\d i -> (d3Link d).source.y)
+                , NumberAttr "x2" (\d i -> (d3Link d).target.x)
+                , NumberAttr "y2" (\d i -> (d3Link d).target.y) ]
+  , Tuple node [  NumberAttr "cx" (\d i -> (d3Node d).x
+ )              , NumberAttr "cy" (\d i -> (d3Node d).y) ]
 ]
 
 -- drag = 
