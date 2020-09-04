@@ -4,40 +4,37 @@ import Prelude
 
 import Affjax (Error, get)
 import Affjax.ResponseFormat as ResponseFormat
-import D3.Example.Force (chart) as Force
-import D3.Example.Minimal (chart) as Minimal
-import D3.Example.Tree (chart) as Tree
+import D3.Base (Selection, emptySelection)
+import D3.Interpreter (interpretSelection, interpretSimulation)
 import Data.Either (Either(..))
+import Data.Int (toNumber)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (logShow)
 import Effect.Console (log)
+import NewSyntax.Force (Model, chart, simulation)
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
-import NewSyntax (chart, simulation)
 
-renderUsing :: forall r. (String -> Unit) -> Either Error { body ∷ String | r } -> Unit
-renderUsing f (Right { body } ) = f body
-renderUsing _ (Left err)        = unit
+createSelection :: forall r. (String -> Selection Model) -> Either Error { body ∷ String | r } -> Selection Model
+createSelection f (Right { body } ) = f body
+createSelection _ (Left err)        = emptySelection
 
-getWindowWidthHeight :: Effect (Tuple Int Int)
+getWindowWidthHeight :: Effect (Tuple Number Number)
 getWindowWidthHeight = do
   win <- window
   width <- innerWidth win
   height <- innerHeight win
-  pure $ Tuple width height
-
+  pure $ Tuple (toNumber width) (toNumber height)
 
 main :: Effect Unit
 main = launchAff_ do -- Aff 
-  logShow $ chart (Tuple 800.0 600.0) { links: [], nodes: [] }
   widthHeight <- liftEffect getWindowWidthHeight
   forceJSON <- get ResponseFormat.string "http://localhost:1234/miserables.json"
-  let forceData = renderUsing (Force.chart widthHeight) forceJSON
-  treeJSON <- get ResponseFormat.string "http://localhost:1234/flare-2.json"
-  let treeData = renderUsing (Tree.chart widthHeight) treeJSON
-  let _ = Minimal.chart 2
+  let forceChart = createSelection  (chart widthHeight) forceJSON
+  liftEffect $ interpretSimulation simulation
+  liftEffect $ interpretSelection forceChart
   liftEffect $ log "🍝"
 

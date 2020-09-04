@@ -1,9 +1,11 @@
 module D3.Interpreter where
 
-import D3.Base (Selection)
+import D3.Base (Selection, Simulation(..))
+import Effect (Effect)
 import Prelude (Unit, pure, unit)
 
-import Effect (Effect)
+interpretSelection :: forall model. Selection model -> Effect Unit
+interpretSelection chart = pure unit
 
-interpret :: forall model. model -> Selection model -> Effect Unit
-interpret model chart = pure unit
+interpretSimulation :: Simulation -> Effect Unit
+interpretSimulation simulation = pure unit

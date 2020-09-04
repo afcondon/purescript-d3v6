@@ -2,7 +2,7 @@ module D3.Base (
     select, append, appendNamed, join, transition, transitionNamed
   , Datum, SubModel
   , Attr(..)
-  , Selection, Element(..), noUpdate, noExit
+  , Selection, Element(..), noUpdate, noExit, emptySelection
   , Force(..), ForceType(..), Link, IdFn, ID, Label
   , Simulation(..), SimulationConfig, defaultConfigSimulation
 ) where
@@ -107,6 +107,7 @@ appendNamed label element attributes children =
 
 noUpdate = NullSelection
 noExit   = NullSelection
+emptySelection = NullSelection
 
 join :: forall model. (model -> SubModel)
     -> Selection model -- minimal definition requires only enter

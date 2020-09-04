@@ -1,4 +1,6 @@
-module NewSyntax (chart, simulation) where
+module NewSyntax.Force (
+    chart, simulation
+  , Model, GraphLink, GraphNode) where
 
 import D3.Base
 
@@ -40,7 +42,7 @@ d3Link = unsafeCoerce
 d3Node :: Datum -> D3GraphNode
 d3Node = unsafeCoerce
 
-chart :: Tuple Number Number -> Model -> Selection Model
+chart :: Tuple Number Number -> String -> Selection Model
 chart (Tuple width height) model =
   let
     -- modelLinks :: Model -> SubModel
@@ -52,11 +54,11 @@ chart (Tuple width height) model =
       appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
         appendNamed "link" Group
           [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-          [join modelLinks linkEnter noUpdate noExit]
+          [ join modelLinks linkEnter noUpdate noExit ]
           
         , appendNamed "node" Group
           [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-          [join modelNodes nodeEnter noUpdate noExit]
+          [ join modelNodes nodeEnter noUpdate noExit ]
         ]
 
 type ColorScale = Datum -> String -- TODO replace with better color, ie Web color package
