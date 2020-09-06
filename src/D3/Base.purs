@@ -1,8 +1,9 @@
 module D3.Base (
-    select, append, appendNamed, join, transition, transitionNamed
-  , Datum, SubModel
+    initialSelect, append, appendNamed, join, transition, transitionNamed
+  , Datum, SubModel, D3Selection
   , Attr(..)
-  , Selection, Element(..), noUpdate, noExit, emptySelection
+  , Selection(..) -- only exported here to build interpreter, will be hidden when code tidied up
+  , Element(..), noUpdate, noExit, emptySelection
   , Force(..), ForceType(..), Link, IdFn, ID, Label
   , Simulation(..), SimulationConfig, defaultConfigSimulation
 ) where
@@ -12,10 +13,12 @@ import Data.Maybe(Maybe(..))
 
 -- | these foreign types allow us to work with some very funky typing without 
 -- | adding tonnes of syntactic noise or type complexity
+-- D3Selection is an opaque type which we keep in order to feed it back to D3 when we look up named Selections and Transitions
+foreign import data D3Selection :: Type
 -- | The Datum models the (variable / polymorphic) type of the lambdas used in Attr
-foreign import data Datum    :: Type
+foreign import data Datum       :: Type
 -- | The SubModel is that portion of the Model that we give to a particular Join
-foreign import data SubModel :: Type
+foreign import data SubModel    :: Type
 
 type Label = String
 type Selector = String
@@ -67,7 +70,9 @@ data Simulation = Simulation {
 -- | between Selection/Transition
 data Selection model = 
     InitialSelect {
-      selector     :: String
+      label        :: String -- we insist on a reference so that we have a key for it in the map
+    , model        :: model
+    , selector     :: String
     , attributes   :: Array Attr
     , children     :: Array (Selection model)
     }
@@ -80,7 +85,8 @@ data Selection model =
   }
   -- d3.selectAll().data().join() pattern
   | Join {
-      "data"       :: model -> SubModel
+      projection   :: model -> SubModel -- function that can extract submodel for subselection
+    , label        :: String  -- we need to name each join so that we can call repeatedly instead of chaining
     , enter        :: Selection model
     , update       :: Selection model
     , exit         :: Selection model
@@ -90,12 +96,11 @@ data Selection model =
     , duration     :: Number
     , attributes   :: Array Attr
   }
-
   | NullSelection -- used for optional Join functions
 
-select :: forall model. Selector -> Array Attr -> Array (Selection model) -> Selection model 
-select selector attributes children = 
-  InitialSelect { selector, attributes, children }
+initialSelect :: forall model. model -> Selector -> Label -> Array Attr -> Array (Selection model) -> Selection model 
+initialSelect model selector label attributes children = 
+  InitialSelect { model, label, selector, attributes, children }
 
 append :: forall model. Element -> Array Attr -> Array (Selection model) -> Selection model 
 append element attributes children = 
@@ -105,16 +110,17 @@ appendNamed :: forall model. Label -> Element -> Array Attr -> Array (Selection 
 appendNamed label element attributes children = 
   Append { label: Just label, element, attributes, children }
 
-noUpdate = NullSelection
-noExit   = NullSelection
-emptySelection = NullSelection
+noUpdate       = NullSelection :: forall model. Selection model
+noExit         = NullSelection :: forall model. Selection model
+emptySelection = NullSelection :: forall model. Selection model
 
-join :: forall model. (model -> SubModel)
+join :: forall model. String 
+    -> (model -> SubModel) -- projection function to present only the appropriate data to this join
     -> Selection model -- minimal definition requires only enter
     -> Selection model -- update is optional
     -> Selection model -- exit is optional
     -> Selection model
-join projection enter update exit = Join { "data": projection, enter, update, exit }
+join label projection enter update exit = Join { label, projection, enter, update, exit }
 
 transition :: forall model. Number -> Array Attr -> Selection model 
 transition duration attributes = 
@@ -125,15 +131,21 @@ transitionNamed label duration attributes =
   Transition { label: Just label, duration, attributes }
 
 data Attr =
-    StringAttr      String (Datum -> Number -> String)
-  | NumberAttr      String (Datum -> Number -> Number)
-  | ArrayNumberAttr String (Datum -> Number -> Array Number)
-  | StaticString    String String
+-- first the direct, static attributes
+    StaticString    String String
   | StaticNumber    String Number
   | StaticArrayNumber String (Array Number)
+-- then the ones that are function of Datum only
+  | StringAttr      String (Datum -> String)
+  | NumberAttr      String (Datum -> Number)
+  | ArrayNumberAttr String (Datum -> Array Number)
+-- lastly attribute functions that take Datum and the index
+  | StringAttrI      String (Datum -> Number -> String)
+  | NumberAttrI      String (Datum -> Number -> Number)
+  | ArrayNumberAttrI String (Datum -> Number -> Array Number)
 
 instance showSelection :: Show (Selection a) where
-  show (InitialSelect r) = "d3.selectAll(\"" <> r.selector <> "\")" <> show r.attributes <> show r.children
+  show (InitialSelect r) = "d3.selectAll(\"" <> r.selector <> "\")" <> " name: " <> show r.label <> " " <> show r.attributes <> show r.children
   show (Append r) = 
     let prefix = case r.label of
                   (Just name) -> "const " <> name <> " = "
@@ -154,12 +166,15 @@ enQuote :: String -> String
 enQuote string = "\"" <> string <> "\""
 
 instance showAttribute :: Show Attr where
-  show (StringAttr a fn) = "\n.attr(\"" <> a <> "\", <function>)"
-  show (NumberAttr a fn) = "\n.attr(\"" <> a <> "\", <function>)"
-  show (ArrayNumberAttr a fn) = "\n.attr(\"" <> a <> "\", <function>)"
   show (StaticString a v) = "\n.attr(\"" <> a <> "\", \"" <> v <> "\")"
   show (StaticNumber a v) = "\n.attr(\"" <> a <> "\", \"" <> show v <> "\")"
   show (StaticArrayNumber a v) = "\n.attr(\"" <> a <> "\", \"" <> show v <> "\")"
+  show (StringAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
+  show (NumberAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
+  show (ArrayNumberAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
+  show (StringAttrI a fn) = "\n.attr(\"" <> a <> "\", <\\d i -> result>)"
+  show (NumberAttrI a fn) = "\n.attr(\"" <> a <> "\", <\\d i -> result>)"
+  show (ArrayNumberAttrI a fn) = "\n.attr(\"" <> a <> "\", <\\d i -> result>)"
 
 instance showElement :: Show Element where
   show Svg = "svg"

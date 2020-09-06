@@ -42,23 +42,23 @@ d3Link = unsafeCoerce
 d3Node :: Datum -> D3GraphNode
 d3Node = unsafeCoerce
 
-chart :: Tuple Number Number -> String -> Selection Model
-chart (Tuple width height) model =
+chart :: Model -> Tuple Number Number -> Selection Model
+chart model (Tuple width height) =
   let
     -- modelLinks :: Model -> SubModel
     modelLinks m = unsafeCoerce $ m.links
     -- modelNodes :: Model -> SubModel
     modelNodes m = unsafeCoerce $ m.nodes
   in 
-    select "div#chart" [] $ singleton $ 
+    initialSelect model "div#chart" "forceLayout" [] $ singleton $ 
       appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
-        appendNamed "link" Group
+        append Group
           [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-          [ join modelLinks linkEnter noUpdate noExit ]
+          [ join "link" modelLinks linkEnter noUpdate noExit ]
           
-        , appendNamed "node" Group
+        , append Group
           [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-          [ join modelNodes nodeEnter noUpdate noExit ]
+          [ join "node" modelNodes nodeEnter noUpdate noExit ]
         ]
 
 type ColorScale = Datum -> String -- TODO replace with better color, ie Web color package
@@ -67,21 +67,21 @@ scale _ = "red"
 
 -- we never take a reference to the Join functions enter, update, exit so -> Unit
 linkEnter :: Selection Model
-linkEnter = append Line [ NumberAttr "stroke-width" (\d i -> sqrt (d3Link d).value)] []
+linkEnter = append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] []
 -- TODO note that we are not saying (\d i -> scale d.group) because contents of foreign data Datum
 -- cannot be visible here, some kind of ugly coerce in the scale function, or using FFI may be required
 nodeEnter :: Selection Model
-nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d i -> scale d)] []
+nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] []
 
 -- | function to build the tick function, quite tricky
 myTickFunction :: Selection Model-> Selection Model -> Array (Tuple (Selection Model) (Array Attr) )
 myTickFunction link node = [
-    Tuple link [  NumberAttr "x1" (\d i -> (d3Link d).source.x)
-                , NumberAttr "y1" (\d i -> (d3Link d).source.y)
-                , NumberAttr "x2" (\d i -> (d3Link d).target.x)
-                , NumberAttr "y2" (\d i -> (d3Link d).target.y) ]
-  , Tuple node [  NumberAttr "cx" (\d i -> (d3Node d).x
- )              , NumberAttr "cy" (\d i -> (d3Node d).y) ]
+    Tuple link [  NumberAttr "x1" (\d -> (d3Link d).source.x)
+                , NumberAttr "y1" (\d -> (d3Link d).source.y)
+                , NumberAttr "x2" (\d -> (d3Link d).target.x)
+                , NumberAttr "y2" (\d -> (d3Link d).target.y) ]
+  , Tuple node [  NumberAttr "cx" (\d -> (d3Node d).x
+ )              , NumberAttr "cy" (\d -> (d3Node d).y) ]
 ]
 
 -- drag = 
