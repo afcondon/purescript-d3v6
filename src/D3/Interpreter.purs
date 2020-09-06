@@ -26,9 +26,10 @@ type D3 model t = StateT (D3State model) Effect t
 interpretSelection :: forall model. NativeSelection -> Selection model -> D3 model Unit
 interpretSelection d3select (InitialSelect r) = do
     let root = d3SelectAllJS r.selector
-    put $ Context r.model (M.singleton r.label d3select)
-    -- (applyAttr root) <$> r.attributes
-    -- (interpret root) <$> r.children
+    put $ Context r.model (M.singleton r.label d3select) :: D3 model Unit
+    let _ = (applyAttr root) <$> r.attributes
+        _ = (interpretSelection root) <$> r.children
+    pure unit
 
 interpretSelection _ _ = pure unit
 
