@@ -10,6 +10,9 @@ import Math (sqrt)
 import Prelude (const, identity, unit, ($), (/))
 import Unsafe.Coerce (unsafeCoerce)
 
+-- do the decode on the Purescript side unless files are ginormous, this is just for prototyping
+foreign import readJSONJS :: String -> Model -- TODO no error handling at all here RN
+
 chargeForce :: Force
 chargeForce = Force "charge" ForceMany
 centerForce :: Number -> Number -> Force
@@ -42,9 +45,10 @@ d3Link = unsafeCoerce
 d3Node :: Datum -> D3GraphNode
 d3Node = unsafeCoerce
 
-chart :: Tuple Number Number -> Model -> Selection Model
-chart (Tuple width height) model =
+chart :: Tuple Number Number -> String -> Selection Model
+chart (Tuple width height) modelJSON =
   let
+    model = readJSONJS modelJSON -- TODO do it here for now and move it to library later
     -- modelLinks :: Model -> SubModel
     modelLinks m = unsafeCoerce $ m.links
     -- modelNodes :: Model -> SubModel
