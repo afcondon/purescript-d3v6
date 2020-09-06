@@ -42,8 +42,8 @@ d3Link = unsafeCoerce
 d3Node :: Datum -> D3GraphNode
 d3Node = unsafeCoerce
 
-chart :: Model -> Tuple Number Number -> Selection Model
-chart model (Tuple width height) =
+chart :: Tuple Number Number -> Model -> Selection Model
+chart (Tuple width height) model =
   let
     -- modelLinks :: Model -> SubModel
     modelLinks m = unsafeCoerce $ m.links

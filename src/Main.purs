@@ -18,8 +18,8 @@ import NewSyntax.Force (Model, chart, simulation)
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
 
-createSelection :: forall r. (String -> Selection Model) -> Either Error { body ∷ String | r } -> Selection Model
-createSelection f (Right { body } ) = f body
+createSelection :: forall r. (Tuple Number Number) -> Either Error { body ∷ String | r } -> Selection Model
+createSelection widthHeight (Right { body } ) = chart widthHeight body
 createSelection _ (Left err)        = emptySelection
 
 getWindowWidthHeight :: Effect (Tuple Number Number)
@@ -33,8 +33,8 @@ main :: Effect Unit
 main = launchAff_ do -- Aff 
   widthHeight <- liftEffect getWindowWidthHeight
   forceJSON <- get ResponseFormat.string "http://localhost:1234/miserables.json"
-  let forceChart = createSelection  (chart widthHeight) forceJSON
-  liftEffect $ interpretSimulation simulation
-  liftEffect $ interpretSelection forceChart
+  let forceChart = createSelection widthHeight forceJSON
+  -- liftEffect $ interpretSimulation simulation
+  -- liftEffect $ interpretSelection forceChart
   liftEffect $ log "🍝"
 

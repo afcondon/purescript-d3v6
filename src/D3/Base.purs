@@ -1,6 +1,6 @@
 module D3.Base (
     initialSelect, append, appendNamed, join, transition, transitionNamed
-  , Datum, SubModel, D3Selection
+  , Datum, SubModel, NativeSelection
   , Attr(..)
   , Selection(..) -- only exported here to build interpreter, will be hidden when code tidied up
   , Element(..), noUpdate, noExit, emptySelection
@@ -13,8 +13,8 @@ import Data.Maybe(Maybe(..))
 
 -- | these foreign types allow us to work with some very funky typing without 
 -- | adding tonnes of syntactic noise or type complexity
--- D3Selection is an opaque type which we keep in order to feed it back to D3 when we look up named Selections and Transitions
-foreign import data D3Selection :: Type
+-- NativeSelection is an opaque type which we keep in order to feed it back to D3 when we look up named Selections and Transitions
+foreign import data NativeSelection :: Type
 -- | The Datum models the (variable / polymorphic) type of the lambdas used in Attr
 foreign import data Datum       :: Type
 -- | The SubModel is that portion of the Model that we give to a particular Join
