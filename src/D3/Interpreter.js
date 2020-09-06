@@ -1,4 +1,4 @@
-use strict
+"use strict"
 
 // :: NativeSelection -> String -> NativeJS -> Unit
 exports.runSimpleAttrJS = selection => attr => value => {

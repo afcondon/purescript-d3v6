@@ -36,40 +36,39 @@ interpretSelection _ _ = pure unit
 
 -- -- TODO fugly, fix later
 -- -- TODO raise error, InitialSelection is the only one that we can start with (alt. use IxMonad)
--- interpretSelection :: forall model. Selection model -> D3 model Unit
--- interpretSelection = case _ of
---   s@(InitialSelect r) -> go nullSelectionJS s 
---   _ -> pure unit 
+interpretSelection' :: forall model. Selection model -> D3 model Unit
+interpretSelection' = case _ of
+  s@(InitialSelect r) -> go nullSelectionJS s 
+  _ -> pure unit 
 
--- go :: forall model. NativeSelection -> Selection model -> D3 model Unit
--- go activeSelection selection = do 
---   case selection of
---     (InitialSelect r) -> do
---           let root = d3SelectAllJS r.selector
---               newContext = Context r.model (M.singleton r.label root)
---           put newContext
---           (applyAttr root) <$> r.attributes
---           (go root)<$> r.children
---           pure unit
+go :: forall model. NativeSelection -> Selection model -> D3 model Unit
+go activeSelection selection = do 
+  case selection of
+    (InitialSelect r) -> do
+          let root = d3SelectAllJS r.selector
+          put $ Context r.model (M.singleton r.label root) :: D3 model Unit
+          let _ = (applyAttr root) <$> r.attributes
+              _ = (go root)<$> r.children
+          pure unit
           
---     (Append r) -> do
---           let selection = d3AppendElementJS activeSelection (show r.element)
---           updateScope selection r.label
---           (applyAttr selection) <$> r.attributes
---           (go selection) <$> r.children
---           pure unit
+    (Append r) -> do
+          let selection = d3AppendElementJS activeSelection (show r.element)
+          updateScope selection r.label
+          let _ = (applyAttr selection) <$> r.attributes
+              _ = (go selection) <$> r.children
+          pure unit
 
---     (Join r) -> do
---           (Context model scope) <- get
---           let selection = d3JoinJS (r.projection model)
---           updateScope selection (Just r.label)
---           -- need to get the enter, update and exit lined up and pass them all at once?
---           -- if we get three selection handles back we can add to them later using names
---           -- joinName.enter, joinName.update, joinName.exit for example
---           pure unit
+    (Join r) -> do
+          (Context model scope) <- get
+          let selection = d3JoinJS activeSelection (r.projection model)
+              _ = updateScope selection (Just r.label)
+          -- need to get the enter, update and exit lined up and pass them all at once?
+          -- if we get three selection handles back we can add to them later using names
+          -- joinName.enter, joinName.update, joinName.exit for example
+          pure unit
 
---     (Transition _) -> pure unit
---     NullSelection -> pure unit
+    (Transition _) -> pure unit
+    NullSelection -> pure unit
 
 initialScope :: forall model. model -> NativeSelection -> String -> D3State model
 initialScope model selection label = Context model (M.singleton label selection)
