@@ -9,6 +9,7 @@ import Data.Map (Map, empty, insert)
 import Data.Map (singleton) as M
 import Data.Maybe (Maybe(..), isJust)
 import Data.Tuple (Tuple(..))
+import Debug.Trace (spy)
 import Effect (Effect)
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -23,21 +24,21 @@ data D3State model = Context model (Map String NativeSelection)
 type D3 model t = StateT (D3State model) Effect t
 
 
-interpretSelection :: forall model. NativeSelection -> Selection model -> D3 model Unit
-interpretSelection d3select (InitialSelect r) = do
-    let root = d3SelectAllJS r.selector
-    put $ Context r.model (M.singleton r.label d3select) :: D3 model Unit
-    let _ = (applyAttr root) <$> r.attributes
-        _ = (interpretSelection root) <$> r.children
-    pure unit
+-- interpretSelection :: forall model. NativeSelection -> Selection model -> D3 model Unit
+-- interpretSelection d3select (InitialSelect r) = do
+--     let root = d3SelectAllJS r.selector
+--     put $ Context r.model (M.singleton r.label d3select) :: D3 model Unit
+--     let _ = (applyAttr root) <$> r.attributes
+--         _ = (interpretSelection root) <$> r.children
+--     pure unit
 
-interpretSelection _ _ = pure unit
+-- interpretSelection _ _ = pure unit
 
 
 -- -- TODO fugly, fix later
 -- -- TODO raise error, InitialSelection is the only one that we can start with (alt. use IxMonad)
-interpretSelection' :: forall model. Selection model -> D3 model Unit
-interpretSelection' = case _ of
+interpretSelection :: forall model. Selection model -> D3 model Unit
+interpretSelection = case _ of
   s@(InitialSelect r) -> go nullSelectionJS s 
   _ -> pure unit 
 
@@ -45,14 +46,14 @@ go :: forall model. NativeSelection -> Selection model -> D3 model Unit
 go activeSelection selection = do 
   case selection of
     (InitialSelect r) -> do
-          let root = d3SelectAllJS r.selector
+          let root = spy "InitialSelect" $ d3SelectAllJS r.selector
           put $ Context r.model (M.singleton r.label root) :: D3 model Unit
           let _ = (applyAttr root) <$> r.attributes
               _ = (go root)<$> r.children
           pure unit
           
     (Append r) -> do
-          let selection = d3AppendElementJS activeSelection (show r.element)
+          let selection = spy "Append" $ d3AppendElementJS activeSelection (show r.element)
           updateScope selection r.label
           let _ = (applyAttr selection) <$> r.attributes
               _ = (go selection) <$> r.children
@@ -60,7 +61,7 @@ go activeSelection selection = do
 
     (Join r) -> do
           (Context model scope) <- get
-          let selection = d3JoinJS activeSelection (r.projection model)
+          let selection = spy "Join" $ d3JoinJS activeSelection (r.projection model)
               _ = updateScope selection (Just r.label)
           -- need to get the enter, update and exit lined up and pass them all at once?
           -- if we get three selection handles back we can add to them later using names

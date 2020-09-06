@@ -54,7 +54,7 @@ chart (Tuple width height) modelJSON =
     -- modelNodes :: Model -> SubModel
     modelNodes m = unsafeCoerce $ m.nodes
   in 
-    initialSelect model "div#chart" "forceLayout" [] $ singleton $ 
+    initialSelect model "div#force" "forceLayout" [] $ singleton $ 
       appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
         append Group
           [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 

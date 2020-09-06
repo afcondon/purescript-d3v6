@@ -7,6 +7,7 @@ You can edit this file as you like.
   [ "affjax"
   , "arrays"
   , "console"
+  , "debug"
   , "effect"
   , "exists"
   , "foldable-traversable"
