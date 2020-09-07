@@ -20,9 +20,9 @@ import NewSyntax.Force (Model, chart, simulation, readJSONJS)
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
 
-readModelFromFileContents :: forall r. (Tuple Number Number) -> Either Error { body ∷ String | r } -> Model
-readModelFromFileContents widthHeight (Right { body } ) = readJSONJS body
-readModelFromFileContents _ (Left err)                  = { links: [], nodes: [] }
+readModelFromFileContents :: forall r. Either Error { body ∷ String | r } -> Model
+readModelFromFileContents (Right { body } ) = readJSONJS body
+readModelFromFileContents (Left err)        = { links: [], nodes: [] }
 
 getWindowWidthHeight :: Effect (Tuple Number Number)
 getWindowWidthHeight = do
@@ -36,7 +36,7 @@ main = launchAff_ do -- Aff
   widthHeight <- liftEffect getWindowWidthHeight
   forceJSON <- get ResponseFormat.string "http://localhost:1234/miserables.json"
   let forceChart = chart widthHeight
-  let model = { links: [], nodes: [] } :: Model
+  let model = readModelFromFileContents forceJSON
   -- liftEffect $ interpretSimulation simulation
   result <- liftEffect $ runStateT (interpretSelection forceChart) (Context model empty)
   liftEffect $ log "🍝"
