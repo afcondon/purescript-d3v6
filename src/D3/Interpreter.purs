@@ -47,7 +47,7 @@ go activeSelection selection = do
   case selection of
     (InitialSelect r) -> do
           let root = spy "InitialSelect" $ d3SelectAllJS r.selector
-          put $ Context r.model (M.singleton r.label root) :: D3 model Unit
+          updateScope root (Just r.label)
           let _ = (applyAttr root) <$> r.attributes
               _ = (go root)<$> r.children
           pure unit
@@ -70,9 +70,6 @@ go activeSelection selection = do
 
     (Transition _) -> pure unit
     NullSelection -> pure unit
-
-initialScope :: forall model. model -> NativeSelection -> String -> D3State model
-initialScope model selection label = Context model (M.singleton label selection)
 
 updateScope :: forall model. NativeSelection -> Maybe String -> D3 model Unit
 updateScope selection label =

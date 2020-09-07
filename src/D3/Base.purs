@@ -71,7 +71,6 @@ data Simulation = Simulation {
 data Selection model = 
     InitialSelect {
       label        :: String -- we insist on a reference so that we have a key for it in the map
-    , model        :: model
     , selector     :: String
     , attributes   :: Array Attr
     , children     :: Array (Selection model)
@@ -98,9 +97,9 @@ data Selection model =
   }
   | NullSelection -- used for optional Join functions
 
-initialSelect :: forall model. model -> Selector -> Label -> Array Attr -> Array (Selection model) -> Selection model 
-initialSelect model selector label attributes children = 
-  InitialSelect { model, label, selector, attributes, children }
+initialSelect :: forall model. Selector -> Label -> Array Attr -> Array (Selection model) -> Selection model 
+initialSelect selector label attributes children = 
+  InitialSelect { label, selector, attributes, children }
 
 append :: forall model. Element -> Array Attr -> Array (Selection model) -> Selection model 
 append element attributes children = 

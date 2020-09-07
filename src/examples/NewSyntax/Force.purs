@@ -1,6 +1,7 @@
 module NewSyntax.Force (
     chart, simulation
-  , Model, GraphLink, GraphNode) where
+  , Model, GraphLink, GraphNode
+  , readJSONJS) where
 
 import D3.Base
 
@@ -45,29 +46,29 @@ d3Link = unsafeCoerce
 d3Node :: Datum -> D3GraphNode
 d3Node = unsafeCoerce
 
-chart :: Tuple Number Number -> String -> Selection Model
-chart (Tuple width height) modelJSON =
-  let
-    model = readJSONJS modelJSON -- TODO do it here for now and move it to library later
-    -- modelLinks :: Model -> SubModel
-    modelLinks m = unsafeCoerce $ m.links
-    -- modelNodes :: Model -> SubModel
-    modelNodes m = unsafeCoerce $ m.nodes
-  in 
-    initialSelect model "div#force" "forceLayout" [] $ singleton $ 
-      appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
-        append Group
-          [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-          [ join "link" modelLinks linkEnter noUpdate noExit ]
-          
-        , append Group
-          [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-          [ join "node" modelNodes nodeEnter noUpdate noExit ]
-        ]
+chart :: Tuple Number Number -> Selection Model
+chart (Tuple width height) = 
+  initialSelect "div#force" "forceLayout" [] $ singleton $ 
+    appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
+      append Group
+        [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
+        [ join "link" modelLinks linkEnter noUpdate noExit ]
+        
+      , append Group
+        [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
+        [ join "node" modelNodes nodeEnter noUpdate noExit ]
+      ]
 
 type ColorScale = Datum -> String -- TODO replace with better color, ie Web color package
 scale :: ColorScale
 scale _ = "red"
+
+-- Projection functions to get subModels out of the Model for sub-selections
+modelLinks :: Model -> SubModel
+modelLinks model = unsafeCoerce model.links
+
+modelNodes :: Model -> SubModel
+modelNodes model = unsafeCoerce model.nodes
 
 -- we never take a reference to the Join functions enter, update, exit so -> Unit
 linkEnter :: Selection Model
