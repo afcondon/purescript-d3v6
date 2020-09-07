@@ -32,6 +32,43 @@ chart (Tuple width height) =
         [ join "node" modelNodes nodeEnter noUpdate noExit ]
       ]
 
+-- Projection functions to get subModels out of the Model for sub-selections
+modelLinks :: Model -> SubModel
+modelLinks model = unsafeCoerce model.links
+
+modelNodes :: Model -> SubModel
+modelNodes model = unsafeCoerce model.nodes
+
+linkEnter :: Selection Model
+linkEnter = append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] []
+
+nodeEnter :: Selection Model
+nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] []
+
+```
+
+## Compare to this JS for example
+
+```JavaScript
+  const svg = d3.selectAll(element).append("svg")
+      .attr("viewBox", [0, 0, width, height]);
+
+  const link = svg.append("g")
+      .attr("stroke", "#999")
+      .attr("stroke-opacity", 0.6)
+    .selectAll("line")
+    .data(links)
+    .join("line")
+      .attr("stroke-width", d => Math.sqrt(d.value));
+
+  const node = svg.append("g")
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 1.5)
+    .selectAll("circle")
+    .data(nodes)
+    .join("circle")
+      .attr("r", 5) // altho static, can't promote
+      .attr("fill", d => scale(d.group))
 ```
 
 # Work in Progress / Design ideas and decisions
