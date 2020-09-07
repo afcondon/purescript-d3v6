@@ -1,5 +1,5 @@
 # purescript-d3v6
-Taking yet another run at this problem - armed with IxMonad this time
+Taking yet another run at this problem - armed with IxMonad this time, if necessary.
 
 (see other repos in my GitHub for notes and previous attempts)
 
@@ -12,41 +12,26 @@ This go round the plan is
 
 # status as of this commit
 
-There is now a new "D3.Base" and a "NewSyntax.purs" which tries to use it to create an abstract version of the Force example. Currently not type-checking because little lambdas in the attribute setters won't type check. Probably needs a Variant type for the Attributes lists...just not sure how that works with interpretation (it would be easy enough with compilation, i guess)
+Abstract syntax tree of chart (for simple force layout only) now exists and also an interpreter (generic, not specific to the force layout) to do the effectful business of putting the chart into the DOM. The mainline is reading and decoding the exact same JSON file as in the standard D3 example and interpreting this chart using that model data. 
+
+the FFI implmentations underneath the interpreter are stubbed out to console. 
 
 # example of current syntax model
 
 ```purescript
-chargeForce = Force "charge" ForceMany
-centerForce width height = Force "center" ForceCenter (width / 2) (height / 2)
-
-simulation =
-  Simulation { 
-      label: "simulation"
-    , config: defaultConfigSimulation
-    , forces: [ chargeForce, centerForce 800.0 900.0 ] 
-    , tick: identity
-    , drag: const unit
-  }
-
--- minimal definition for now, need to factor in things added by simulation such as Vx, Vy
-type Node = { x :: Number, y :: Number }
-type Model = { links :: Array Link, nodes :: Array Node }
-
-chart :: Tuple Number Number -> Model -> Selection Model
-chart (Tuple width height) model = 
-  select "div#chart" [] [
-    appendNamed "svg" Svg [ staticArrayNumberAttr "viewBox" [0.0,0.0,width,height] ] 
-      -- children of "svg"
-      [ appendNamed "link" Group
-        [ staticStringAttr "stroke" "#999", staticNumberAttr "stroke-opacity" 0.6 ] 
-        (join linkEnter Nothing Nothing) 
+chart :: Tuple Number Number -> Selection Model
+chart (Tuple width height) = 
+  initialSelect "div#force" "forceLayout" [] $ singleton $ 
+    appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
+      append Group
+        [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
+        [ join "link" modelLinks linkEnter noUpdate noExit ]
         
-      , appendNamed "node" Group
-        [ staticStringAttr "stroke" "#ff", staticNumberAttr "stroke-opacity" 1.5 ]
-        (join nodeEnter Nothing Nothing)
+      , append Group
+        [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
+        [ join "node" modelNodes nodeEnter noUpdate noExit ]
       ]
-  ]
+
 ```
 
 # Work in Progress / Design ideas and decisions
@@ -58,6 +43,8 @@ A concrete example: the D3 hierarchy structure by default expects the children f
 
 Tentative decision - replicate the munging, but pick a statically typed standard for things like hierarchy and either convert before sending or send JSON that can be parsed correctly by D3's own defaults
 
+CURRENT SOLUTION - using judicious `unsafeCoerce`-based functions to just work with the JavaScript-native data. Seems like a good compromise to retain readability of abstract chart definition (primary goal).
+
 ## Use something more like Variant for attributes
 Simple values probably not a problem but all the `.attr("foo", d => d.bar * 2)` or, worse, `.attr("foo", d => purescriptFn(d))` cases might be more complicated
 
@@ -67,4 +54,6 @@ Tentative decision - try to take the stuff from previous attempt first
   * Open Selection (such as `d3.selectAll('div#hook').append('circle')`), ie starting with d3 itself and going up to the point where you do the data/join
   * Operating Selection (from data.join) -> can produce a Transition
   * Transition -> can yield back to the selection
+  
+CURRENT STATUS - with the StateT tracking the context there doesn't seem to be any need for IndexedMonads actually. KISS principle.
   
