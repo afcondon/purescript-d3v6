@@ -52,11 +52,15 @@ chart (Tuple width height) =
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ join "link" modelLinks linkEnter noUpdate noExit ]
+        [ join "link" modelLinks 
+          (append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] [])
+          noUpdate noExit ]
         
       , append Group
         [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-        [ join "node" modelNodes nodeEnter noUpdate noExit ]
+        [ join "node" modelNodes 
+          (append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] [])
+          noUpdate noExit ]
       ]
 
 type ColorScale = Datum -> String -- TODO replace with better color, ie Web color package
@@ -70,13 +74,33 @@ modelLinks model = unsafeCoerce model.links
 modelNodes :: Model -> SubModel
 modelNodes model = unsafeCoerce model.nodes
 
--- we never take a reference to the Join functions enter, update, exit so -> Unit
+-- another version of the 'chart' above, showing how Selections can be composed
+chartComposed :: Tuple Number Number -> Selection Model
+chartComposed (Tuple width height) = 
+  initialSelect "div#force" "forceLayout" [] $ singleton $ 
+    appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
+      append Group
+        [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
+        [ join "link" modelLinks 
+          linkEnter
+          noUpdate noExit ]
+        
+      , append Group
+        [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
+        [ join "node" modelNodes 
+          nodeEnter
+          noUpdate noExit ]
+      ]
+
 linkEnter :: Selection Model
 linkEnter = append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] []
+
 -- TODO note that we are not saying (\d i -> scale d.group) because contents of foreign data Datum
 -- cannot be visible here, some kind of ugly coerce in the scale function, or using FFI may be required
 nodeEnter :: Selection Model
 nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] []
+
+
 
 -- | function to build the tick function, quite tricky
 myTickFunction :: Selection Model-> Selection Model -> Array (Tuple (Selection Model) (Array Attr) )
