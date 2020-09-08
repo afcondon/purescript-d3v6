@@ -50,7 +50,7 @@ d3Node = unsafeCoerce
 chart :: Tuple Number Number -> Selection Model
 chart (Tuple width height) = 
   initialSelect "div#force" "forceLayout" [] $ singleton $ 
-    appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
+    appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [width/2.0,height/2.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
         [ join "link" modelLinks 
