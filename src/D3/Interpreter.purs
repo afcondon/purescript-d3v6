@@ -2,9 +2,9 @@ module D3.Interpreter where
 
 import Prelude
 
-import Control.Monad.State (StateT(..), get, put)
+import Control.Monad.State (StateT(..), get, modify_, put)
 import D3.Base (Attr(..), NativeSelection, Selection(..), Simulation)
-import Data.Foldable (foldl)
+import Data.Foldable (foldl, traverse_)
 import Data.Map (Map, empty, insert)
 import Data.Map (singleton) as M
 import Data.Maybe (Maybe(..), isJust)
@@ -20,26 +20,15 @@ interpretSimulation simulation = pure unit
 -- we're going to model the scope of the JavaScript "script" like this
 -- this will allow us to have relatively low-overhead continuity across 
 -- parts of the script
-data D3State model = Context model (Map String NativeSelection)
-type D3 model t = StateT (D3State model) Effect t
+data D3State model   = Context model (Map String NativeSelection)
+type D3      model t = StateT (D3State model) Effect t
 
-
--- interpretSelection :: forall model. NativeSelection -> Selection model -> D3 model Unit
--- interpretSelection d3select (InitialSelect r) = do
---     let root = d3SelectAllJS r.selector
---     put $ Context r.model (M.singleton r.label d3select) :: D3 model Unit
---     let _ = (applyAttr root) <$> r.attributes
---         _ = (interpretSelection root) <$> r.children
---     pure unit
-
--- interpretSelection _ _ = pure unit
-
-
--- -- TODO fugly, fix later
--- -- TODO raise error, InitialSelection is the only one that we can start with (alt. use IxMonad)
+-- TODO fugly, fix later
 interpretSelection :: forall model. Selection model -> D3 model Unit
 interpretSelection = case _ of
+  -- InitialSelection is the only one that we can start with (alt. use IxMonad)
   s@(InitialSelect r) -> go nullSelectionJS s 
+  -- TODO raise error, or structure differently
   _ -> pure unit 
 
 go :: forall model. NativeSelection -> Selection model -> D3 model Unit
@@ -48,21 +37,24 @@ go activeSelection selection = do
     (InitialSelect r) -> do
           let root = spy "InitialSelect" $ d3SelectAllJS r.selector
           updateScope root (Just r.label)
-          let _ = (applyAttr root) <$> r.attributes
-              _ = (go root)<$> r.children
+          traverse_ (applyAttr root) r.attributes
+          traverse_ (go root) r.children
           pure unit
           
     (Append r) -> do
           let appendSelection = spy "Append" $ d3AppendElementJS activeSelection (show r.element)
-              _ = updateScope appendSelection r.label
-              _ = (applyAttr appendSelection) <$> r.attributes
-              _ = (go appendSelection) <$> r.children
+          updateScope appendSelection r.label
+          traverse_ (applyAttr appendSelection) r.attributes
+          traverse_ (go appendSelection) r.children
           pure unit
 
     (Join r) -> do
           (Context model scope) <- get
-          let joinSelection = spy "Join" $ d3JoinJS activeSelection (r.projection model)
-              _ = updateScope joinSelection (Just r.label)
+          let joinSelection = d3JoinJS activeSelection (r.projection model)
+          updateScope joinSelection (Just r.label)
+          enterSelection  <- go joinSelection r.enter
+          updateSelection <- go joinSelection r.update
+          exitSelection   <- go joinSelection r.exit
           -- need to get the enter, update and exit lined up and pass them all at once?
           -- if we get three selection handles back we can add to them later using names
           -- joinName.enter, joinName.update, joinName.exit for example
@@ -72,14 +64,9 @@ go activeSelection selection = do
     NullSelection -> pure unit
 
 updateScope :: forall model. NativeSelection -> Maybe String -> D3 model Unit
-updateScope selection label =  
-  case label of
-    (Just name) -> do
-      context <- get
-      let (Context model scope) = spy "context:" context
-      put $ Context model (insert name selection scope)
-      pure unit
-    Nothing -> spy "<context unchanged>" pure unit 
+updateScope selection Nothing      = pure unit 
+updateScope selection (Just label) =
+  modify_ (\(Context model scope) -> Context model (insert label selection scope))
 
 applyAttr :: forall model. NativeSelection -> Attr -> D3 model Unit
 applyAttr selection = case _ of
@@ -111,6 +98,7 @@ foreign import runDatumIndexAttrJS :: forall f. NativeSelection -> String -> f -
 foreign import d3SelectAllJS :: String -> NativeSelection
 foreign import d3AppendElementJS :: NativeSelection -> String -> NativeSelection
 foreign import d3JoinJS :: forall d. NativeSelection -> d -> NativeSelection
+foreign import d3JoinWithIndexJS :: forall d. NativeSelection -> d -> (d -> NativeJS) -> NativeSelection
 foreign import nullSelectionJS :: NativeSelection
 foreign import data NativeJS :: Type
 

@@ -7,6 +7,7 @@ import D3.Base
 
 import Data.Array (singleton)
 import Data.Tuple (Tuple(..))
+import Debug.Trace (spy)
 import Math (sqrt)
 import Prelude (const, identity, unit, ($), (/))
 import Unsafe.Coerce (unsafeCoerce)
@@ -52,8 +53,7 @@ chart (Tuple width height) =
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ append Group [] []
-        , join "link" modelLinks 
+        [ join "link" modelLinks 
           (append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] [])
           noUpdate noExit ]
         
@@ -70,10 +70,10 @@ scale _ = "red"
 
 -- Projection functions to get subModels out of the Model for sub-selections
 modelLinks :: Model -> SubModel
-modelLinks model = unsafeCoerce model.links
+modelLinks model = spy "modelLinks" unsafeCoerce model.links
 
 modelNodes :: Model -> SubModel
-modelNodes model = unsafeCoerce model.nodes
+modelNodes model = spy "modelNodes" unsafeCoerce model.nodes
 
 -- another version of the 'chart' above, showing how Selections can be composed
 chartComposed :: Tuple Number Number -> Selection Model
