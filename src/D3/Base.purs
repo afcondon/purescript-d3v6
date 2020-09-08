@@ -70,7 +70,7 @@ data Simulation = Simulation {
 -- | between Selection/Transition
 data Selection model = 
     InitialSelect {
-      label        :: String -- we insist on a reference so that we have a key for it in the map
+      label        :: String -- root must have a label so that we have a key for it in the map
     , selector     :: String
     , attributes   :: Array Attr
     , children     :: Array (Selection model)
@@ -85,7 +85,7 @@ data Selection model =
   -- d3.selectAll().data().join() pattern
   | Join {
       projection   :: model -> SubModel -- function that can extract submodel for subselection
-    , label        :: String  -- we need to name each join so that we can call repeatedly instead of chaining
+    , label        :: String  -- Join must have a name so we can add the enter, merge, exit
     , enter        :: Selection model
     , update       :: Selection model
     , exit         :: Selection model

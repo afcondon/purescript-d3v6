@@ -52,7 +52,8 @@ chart (Tuple width height) =
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ join "link" modelLinks 
+        [ append Group [] []
+        , join "link" modelLinks 
           (append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] [])
           noUpdate noExit ]
         

@@ -53,16 +53,16 @@ go activeSelection selection = do
           pure unit
           
     (Append r) -> do
-          let selection = spy "Append" $ d3AppendElementJS activeSelection (show r.element)
-          updateScope selection r.label
-          let _ = (applyAttr selection) <$> r.attributes
-              _ = (go selection) <$> r.children
+          let appendSelection = spy "Append" $ d3AppendElementJS activeSelection (show r.element)
+              _ = updateScope appendSelection r.label
+              _ = (applyAttr appendSelection) <$> r.attributes
+              _ = (go appendSelection) <$> r.children
           pure unit
 
     (Join r) -> do
           (Context model scope) <- get
-          let selection = spy "Join" $ d3JoinJS activeSelection (r.projection model)
-              _ = updateScope selection (Just r.label)
+          let joinSelection = spy "Join" $ d3JoinJS activeSelection (r.projection model)
+              _ = updateScope joinSelection (Just r.label)
           -- need to get the enter, update and exit lined up and pass them all at once?
           -- if we get three selection handles back we can add to them later using names
           -- joinName.enter, joinName.update, joinName.exit for example
@@ -72,14 +72,14 @@ go activeSelection selection = do
     NullSelection -> pure unit
 
 updateScope :: forall model. NativeSelection -> Maybe String -> D3 model Unit
-updateScope selection label =
+updateScope selection label =  
   case label of
     (Just name) -> do
       context <- get
-      let (Context model scope) = context
+      let (Context model scope) = spy "context:" context
       put $ Context model (insert name selection scope)
       pure unit
-    Nothing -> pure unit 
+    Nothing -> spy "<context unchanged>" pure unit 
 
 applyAttr :: forall model. NativeSelection -> Attr -> D3 model Unit
 applyAttr selection = case _ of

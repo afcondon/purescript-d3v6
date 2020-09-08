@@ -19,10 +19,16 @@ exports.runDatumIndexAttrJS = selection => attr => f =>
 exports.d3SelectAllJS = selector => d3.selectAll(selector) 
 
 // :: NativeSelection -> String -> NativeSelection
-exports.d3AppendElementJS = selection => element => selection.append(element) 
+exports.d3AppendElementJS = selection => element => performAppend(selection, element)
 
 // :: forall d. d -> NativeSelection
 exports.d3JoinJS = selection => data => selection.data(data)
 
 // :: NativeSelection
 exports.nullSelectionJS = null // NB only used on init, maybe still a bad idea
+
+
+var performAppend = function (selection, element) {
+  console.log('performAppend');
+  return selection.append(element)
+}
