@@ -53,13 +53,13 @@ chart (Tuple width height) =
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [width/2.0,height/2.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ join "link" modelLinks 
+        [ join "link" modelLinks Line
           (append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] [])
           noUpdate noExit ]
         
       , append Group
         [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-        [ join "node" modelNodes 
+        [ join "node" modelNodes Circle
           (append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] [])
           noUpdate noExit ]
       ]
@@ -82,13 +82,13 @@ chartComposed (Tuple width height) =
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ join "link" modelLinks 
+        [ join "link" modelLinks Line
           linkEnter
           noUpdate noExit ]
         
       , append Group
         [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-        [ join "node" modelNodes 
+        [ join "node" modelNodes Circle
           nodeEnter
           noUpdate noExit ]
       ]

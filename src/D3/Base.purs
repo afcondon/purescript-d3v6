@@ -86,6 +86,7 @@ data Selection model =
   | Join {
       projection   :: model -> SubModel -- function that can extract submodel for subselection
     , label        :: String  -- Join must have a name so we can add the enter, merge, exit
+    , element      :: Element -- has to agree with the Element in enter/update/exit
     , enter        :: Selection model
     , update       :: Selection model
     , exit         :: Selection model
@@ -115,11 +116,12 @@ emptySelection = NullSelection :: forall model. Selection model
 
 join :: forall model. String 
     -> (model -> SubModel) -- projection function to present only the appropriate data to this join
+    -> Element
     -> Selection model -- minimal definition requires only enter
-    -> Selection model -- update is optional
-    -> Selection model -- exit is optional
+    -> Selection model -- update is optional (ie can be given NullSelection)
+    -> Selection model -- exit is optional (ie can be given NullSelection)
     -> Selection model
-join label projection enter update exit = Join { label, projection, enter, update, exit }
+join label projection element enter update exit = Join { label, projection, element, enter, update, exit }
 
 transition :: forall model. Number -> Array Attr -> Selection model 
 transition duration attributes = 

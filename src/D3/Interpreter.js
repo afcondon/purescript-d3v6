@@ -18,8 +18,6 @@ exports.runDatumIndexAttrJS = selection => attr => f => {
   selection.attr(attr, d => i => f(d)(i))
 }
 
-
-
 // :: String -> NativeSelection
 exports.d3SelectAllJS = selector => { 
   return d3.selectAll(selector)
@@ -27,15 +25,23 @@ exports.d3SelectAllJS = selector => {
 
 // :: NativeSelection -> String -> NativeSelection
 exports.d3AppendElementJS = selection => element => { 
-  console.log('performAppend');
+  console.log('append');
   return selection.append(element)
 }
 
+// // :: NativeSelection -> String -> NativeSelection
+// exports.d3EnterElementJS = selection => element => { 
+//   console.log('enter');
+//   return selection.append(element)
+// }
+
 // :: forall d. d -> NativeSelection
-exports.d3JoinJS = selection => data => { 
+exports.d3JoinJS = selection => element => data => { 
   console.log('joining the data to the model');
-  return selection.data(data)
+  // could we get the join.enter, join.update, join.exit selections out of this in order to simply attach the append normally later
+  return selection.selectAll(element).data(data).enter()
 }
+
 exports.d3JoinWithIndexJS = selection => data => idFunction => { 
   return selection.data(data, idFunction)
 }

@@ -42,7 +42,7 @@ go activeSelection selection = do
           pure unit
           
     (Append r) -> do
-          let appendSelection = spy "Append" $ d3AppendElementJS activeSelection (show r.element)
+          let appendSelection = spy "Append" d3AppendElementJS activeSelection (show r.element)
           updateScope appendSelection r.label
           traverse_ (applyAttr appendSelection) r.attributes
           traverse_ (go appendSelection) r.children
@@ -50,11 +50,11 @@ go activeSelection selection = do
 
     (Join r) -> do
           (Context model scope) <- get
-          let joinSelection = d3JoinJS activeSelection (r.projection model)
+          let joinSelection = d3JoinJS activeSelection (show r.element) (r.projection model)
           updateScope joinSelection (Just r.label)
           enterSelection  <- go joinSelection r.enter
-          updateSelection <- go joinSelection r.update
-          exitSelection   <- go joinSelection r.exit
+          -- updateSelection <- go joinSelection r.update
+          -- exitSelection   <- go joinSelection r.exit
           -- need to get the enter, update and exit lined up and pass them all at once?
           -- if we get three selection handles back we can add to them later using names
           -- joinName.enter, joinName.update, joinName.exit for example
@@ -97,7 +97,8 @@ foreign import runDatumAttrJS :: forall f. NativeSelection -> String -> f -> Uni
 foreign import runDatumIndexAttrJS :: forall f. NativeSelection -> String -> f -> Unit
 foreign import d3SelectAllJS :: String -> NativeSelection
 foreign import d3AppendElementJS :: NativeSelection -> String -> NativeSelection
-foreign import d3JoinJS :: forall d. NativeSelection -> d -> NativeSelection
+-- foreign import d3EnterElementJS :: NativeSelection -> String -> NativeSelection
+foreign import d3JoinJS :: forall d. NativeSelection -> String -> d -> NativeSelection
 foreign import d3JoinWithIndexJS :: forall d. NativeSelection -> d -> (d -> NativeJS) -> NativeSelection
 foreign import nullSelectionJS :: NativeSelection
 foreign import data NativeJS :: Type
