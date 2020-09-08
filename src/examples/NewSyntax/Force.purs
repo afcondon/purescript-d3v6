@@ -26,6 +26,8 @@ simulation =
       label: "simulation"
     , config: defaultConfigSimulation
     , forces: [ chargeForce, centerForce 800.0 900.0 ] 
+    , nodes: []
+    , links: []
     , tick: identity
     , drag: const unit
   }

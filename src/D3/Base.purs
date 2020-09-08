@@ -4,8 +4,8 @@ module D3.Base (
   , Attr(..)
   , Selection(..) -- only exported here to build interpreter, will be hidden when code tidied up
   , Element(..), noUpdate, noExit, emptySelection
-  , Force(..), ForceType(..), Link, IdFn, ID, Label
-  , Simulation(..), SimulationConfig, defaultConfigSimulation
+  , Force(..), ForceType(..), Link, Node, IdFn, ID, Label
+  , Simulation(..), SimulationRecord, SimulationConfig, defaultConfigSimulation
 ) where
 
 import Prelude
@@ -44,25 +44,30 @@ defaultConfigSimulation = {
 -- | Force Layout core types
 type ID = Int -- TODO this needs to be polymorphic eventually
 type Link = forall r. { id :: ID, source :: ID, target :: ID | r }
+type Node = forall r i. { id :: i | r }
 type IdFn = Link -> ID
 data Force = Force Label ForceType
 data ForceType =
-    ForceMany 
+    ForceMany
   | ForceCenter Number Number
-  | ForceLink (Array Link) IdFn
+  -- | ForceLink (Array Link) IdFn
   | ForceCollide
   | ForceX
   | ForceY
   | ForceRadial
   | Custom
 
-data Simulation = Simulation { 
+type SimulationRecord = { 
     label  :: String
   , config :: SimulationConfig
+  , nodes  :: Array Node
+  , links  :: Array Link
   , forces :: Array Force
   , tick   :: Unit -> Unit -- could be Effect Unit
   , drag   :: Simulation -> Unit -- could be Effect Unit
 }
+data Simulation = Simulation SimulationRecord
+
 -- | Types to represent Selection and Insertion
 -- | you can append a list of many (different) elements 
 -- | or an entire selection of only one type of element bound to some data
