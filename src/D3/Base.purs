@@ -184,10 +184,10 @@ instance showAttribute :: Show Attr where
   show (ArrayNumberAttrI a fn) = "\n.attr(\"" <> a <> "\", <\\d i -> result>)"
 
 instance showElement :: Show Element where
-  show Svg = "svg"
-  show Group = "g"
-  show Div = "div"
-  show Line = "line"
+  show Svg    = "svg"
+  show Group  = "g"
+  show Div    = "div"
+  show Line   = "line"
   show Circle = "circle"
-  show Path = "path"
-  show Text = "text"
+  show Path   = "path"
+  show Text   = "text"

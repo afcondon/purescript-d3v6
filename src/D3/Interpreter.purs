@@ -2,10 +2,10 @@ module D3.Interpreter where
 
 import Prelude
 
-import Control.Monad.State (StateT, get, modify_)
+import Control.Monad.State (StateT, get, modify_, put)
 import D3.Base (Attr(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation(..), SimulationConfig)
 import Data.Foldable (traverse_)
-import Data.Map (Map, insert)
+import Data.Map (Map, empty, insert)
 import Data.Maybe (Maybe(..))
 import Debug.Trace (spy)
 import Effect (Effect)
@@ -35,31 +35,37 @@ foreign import nullSelectionJS     ::           NativeSelection
 foreign import initSimulationJS :: SimulationConfig -> NativeSelection
 -- | TODO NB NativeSelection here includes "NativeSimulation" and so is mis-named
 
-foreign import putNodesInSimulationJS :: NativeSelection -> Array NativeJS -> Unit
-foreign import putLinksInSimulationJS :: NativeSelection -> Array NativeJS -> Unit
+foreign import putNodesInSimulationJS :: NativeSelection -> Array NativeJS -> Array NativeJS
+foreign import putLinksInSimulationJS :: NativeSelection -> Array NativeJS -> Array NativeJS
 foreign import startSimulationJS      :: NativeSelection -> Unit
 foreign import stopSimulationJS       :: NativeSelection -> Unit
 foreign import forceManyJS            :: NativeSelection -> String -> Unit
 foreign import forceCenterJS          :: NativeSelection -> String -> Number -> Number -> Unit
--- foreign import forceLinks             :: NativeSelection -> String -> Unit
 foreign import forceCollideJS         :: NativeSelection -> String -> Number -> Unit
 foreign import forceXJS               :: NativeSelection -> String -> Number -> Unit
 foreign import forceYJS               :: NativeSelection -> String -> Number -> Unit
 foreign import forceRadialJS          :: NativeSelection -> String -> Number -> Number -> Unit
+-- foreign import forceLinks             :: NativeSelection -> String -> Unit
 
 -- we model the scope of the JavaScript "script" like this (see README for rationale)
 data D3State model   = Context model (Map String NativeSelection)
-type D3      model t = StateT (D3State model) Effect t
+
+initialScope :: Map String NativeSelection
+initialScope = empty
+
+type D3 model t      = StateT (D3State model) Effect t
 
 -- |                   FORCE LAYOUT (SIMULATION) interpreter
 
 -- | get a reference to a simulation that we can then use elsewhere
 -- | ie having interpreted a Selection such that the DOM is set up to run a simulation
+-- | NB this is actually modifying the model in the Context
 interpretSimulation :: forall model node link. Simulation -> 
-                              (model -> Array node) ->
-                              (model -> Array link) ->
+                              (model -> Array node) ->  -- project nodes from model
+                              (model -> Array link) ->  -- project links from model
+                              (Array link -> Array node -> model) -> -- repackage nodes & links as model
                               D3 model Unit
-interpretSimulation (Simulation r) getNodes getLinks =
+interpretSimulation (Simulation r) getNodes getLinks repackage =
   do
     (Context model scope) <- get
     let sim = initSimulationJS r.config
@@ -67,14 +73,17 @@ interpretSimulation (Simulation r) getNodes getLinks =
         links = nativeLinks $ getLinks model
     updateScope sim (Just r.label)
     traverse_ (interpretForce sim) r.forces
-    let _ = putNodesInSimulationJS sim nodes
-        _ = putLinksInSimulationJS sim links
-    -- attach tick, end, drag handlers etc
-        _ = startSimulationJS
-    pure unit
+    let initializedNodes = unnativeNodes $ putNodesInSimulationJS sim nodes
+        initializedLinks = unnativeLinks $ putLinksInSimulationJS sim links
+        initializedModel = repackage initializedLinks initializedNodes
+        -- attach tick, end, drag handlers etc
+        _ = startSimulationJS -- possibly we'll prefer to never start during init?
+    put (Context initializedModel scope)
   where
-    nativeNodes = unsafeCoerce :: Array node -> Array NativeJS
-    nativeLinks = unsafeCoerce :: Array link -> Array NativeJS
+    nativeNodes   = unsafeCoerce :: Array node -> Array NativeJS
+    nativeLinks   = unsafeCoerce :: Array link -> Array NativeJS
+    unnativeNodes = unsafeCoerce :: Array NativeJS -> Array node
+    unnativeLinks = unsafeCoerce :: Array NativeJS -> Array link
 
 
 

@@ -33,10 +33,10 @@ exports.initSimulationJS = config => {
             .alphaDecay(config.alphaDecay) // default is 0.0228
             .velocityDecay(config.velocityDecay) // default is 0.4
 }
-//  :: Simulation -> Array Node -> Unit
-exports.putNodesInSimulationJS = simulation => nodes => simulation.nodes(nodes)
-//  :: Simulation -> Array Link -> Unit
-exports.putLinksInSimulationJS = simulation => links => simulation.links(links)
+//  :: Simulation -> Array NativeNode -> Array NativeNode
+exports.putNodesInSimulationJS = simulation => nodes => { simulation.nodes(nodes); return nodes }
+//  :: Simulation -> Array NativeLink -> Array NativeLink
+exports.putLinksInSimulationJS = simulation => links => { simulation.links(links); return links }
 //  :: Unit -> Unit
 exports.startSimulationJS = simulation => simulation.restart()
 //  :: Unit -> Unit
