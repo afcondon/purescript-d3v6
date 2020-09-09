@@ -1,54 +1,30 @@
 "use strict"
 
+//            ATTR functions
+
 // :: NativeSelection -> String -> NativeJS -> Unit
-exports.runSimpleAttrJS = selection => attr => value => {
-  console.log(`runSimpleAttrJS ${attr} ${value}`);
-  selection.attr(attr, value)
-} 
-
+exports.runSimpleAttrJS = selection => attr => value => selection.attr(attr, value)
 // :: forall f. NativeSelection -> String -> f -> Unit
-exports.runDatumAttrJS = selection => attr => f => {
-  console.log(`runDatumAttrJS ${attr} f`)
-  selection.attr(attr, f)
-}
-
+exports.runDatumAttrJS = selection => attr => f => selection.attr(attr, f)
 // :: forall f. NativeSelection -> String -> f -> Unit
-exports.runDatumIndexAttrJS = selection => attr => f => {
-  console.log(`runDatumIndexAttrJS ${attr} f`)
-  selection.attr(attr, d => i => f(d)(i))
-}
+exports.runDatumIndexAttrJS = selection => attr => f => selection.attr(attr, d => i => f(d)(i))
 
+
+//           SELECTION functions
 // :: String -> NativeSelection
-exports.d3SelectAllJS = selector => { 
-  return d3.selectAll(selector)
-}
-
+exports.d3SelectAllJS = selector => d3.selectAll(selector)
 // :: NativeSelection -> String -> NativeSelection
-exports.d3AppendElementJS = selection => element => { 
-  console.log('append');
-  return selection.append(element)
-}
-
-// // :: NativeSelection -> String -> NativeSelection
-// exports.d3EnterElementJS = selection => element => { 
-//   console.log('enter');
-//   return selection.append(element)
-// }
-
+exports.d3AppendElementJS = selection => element => selection.append(element)
 // :: forall d. d -> NativeSelection
-exports.d3JoinJS = selection => element => data => { 
-  console.log('joining the data to the model');
-  // could we get the join.enter, join.update, join.exit selections out of this in order to simply attach the append normally later
-  return selection.selectAll(element).data(data).enter()
-}
-
-exports.d3JoinWithIndexJS = selection => data => idFunction => { 
-  return selection.data(data, idFunction)
-}
-
+exports.d3JoinJS = selection => element => data => selection.selectAll(element).data(data).enter()
+// could we get the join.enter, join.update, join.exit selections out of this in order to simply 
+// attach the append normally later??
+exports.d3JoinWithIndexJS = selection => data => idFunction => selection.data(data, idFunction)
 // :: NativeSelection
 exports.nullSelectionJS = null // NB only used on init, maybe still a bad idea
 
+
+//            SIMULATION functions
 exports.initSimulationJS = config => {
   return d3.forceSimulation()
             .alpha(config.alpha) // default is 1
@@ -66,6 +42,7 @@ exports.startSimulationJS = simulation => simulation.restart()
 //  :: Unit -> Unit
 exports.stopSimulationJS = simulation => simulation.stop()
 
+//            FORCE functions 
 // :: Simulation -> Unit
 exports.forceManyJS = simulation => label => simulation.force(label, d3.forceManyBody())
 // :: Simulation -> Number -> Number -> Unit

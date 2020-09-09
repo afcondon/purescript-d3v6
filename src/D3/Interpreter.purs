@@ -2,64 +2,96 @@ module D3.Interpreter where
 
 import Prelude
 
-import Control.Monad.State (StateT(..), get, modify_, put)
-import D3.Base (Attr(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation)
-import Data.Foldable (foldl, traverse_)
-import Data.Map (Map, empty, insert)
-import Data.Map (singleton) as M
-import Data.Maybe (Maybe(..), isJust)
-import Data.Tuple (Tuple(..))
+import Control.Monad.State (StateT, get, modify_)
+import D3.Base (Attr(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation(..), SimulationConfig)
+import Data.Foldable (traverse_)
+import Data.Map (Map, insert)
+import Data.Maybe (Maybe(..))
 import Debug.Trace (spy)
 import Effect (Effect)
-import NewSyntax.Force (simulation)
 import Unsafe.Coerce (unsafeCoerce)
+
+-- | right upfront we're just going to hand wave over the types given to D3
+-- | design decision here to prefer (aliased) `unsafeCoerce` to complex wrappers
+-- | D3 WILL modify any data you give it, it will also require types that CANNOT be
+-- | expressed in PureScript AND also transparently shared with JavaScript 
+-- | (ie Variants, Exists, Nullable etc)
+-- | IMPORTANT - coercions should not be visible outside this module
+foreign import data NativeJS       ::           Type
+
+-- | foreign types associated with D3 Selection 
+-- all this FFI stuff can be made Effect Unit later 
+foreign import runSimpleAttrJS     ::           NativeSelection -> String -> NativeJS -> Unit
+foreign import runDatumAttrJS      :: forall f. NativeSelection -> String -> f -> Unit
+foreign import runDatumIndexAttrJS :: forall f. NativeSelection -> String -> f -> Unit
+foreign import d3SelectAllJS       ::           String -> NativeSelection
+foreign import d3AppendElementJS   ::           NativeSelection -> String -> NativeSelection
+-- foreign import d3EnterElementJS :: NativeSelection -> String -> NativeSelection
+foreign import d3JoinJS            :: forall d. NativeSelection -> String -> d -> NativeSelection
+foreign import d3JoinWithIndexJS   :: forall d. NativeSelection -> d -> (d -> NativeJS) -> NativeSelection
+foreign import nullSelectionJS     ::           NativeSelection
+
+-- | foreign types associated with Force Layout Simulation
+foreign import initSimulationJS :: SimulationConfig -> NativeSelection
+-- | TODO NB NativeSelection here includes "NativeSimulation" and so is mis-named
+
+foreign import putNodesInSimulationJS :: NativeSelection -> Array NativeJS -> Unit
+foreign import putLinksInSimulationJS :: NativeSelection -> Array NativeJS -> Unit
+foreign import startSimulationJS      :: NativeSelection -> Unit
+foreign import stopSimulationJS       :: NativeSelection -> Unit
+foreign import forceManyJS            :: NativeSelection -> String -> Unit
+foreign import forceCenterJS          :: NativeSelection -> String -> Number -> Number -> Unit
+-- foreign import forceLinks             :: NativeSelection -> String -> Unit
+foreign import forceCollideJS         :: NativeSelection -> String -> Number -> Unit
+foreign import forceXJS               :: NativeSelection -> String -> Number -> Unit
+foreign import forceYJS               :: NativeSelection -> String -> Number -> Unit
+foreign import forceRadialJS          :: NativeSelection -> String -> Number -> Number -> Unit
 
 -- we model the scope of the JavaScript "script" like this (see README for rationale)
 data D3State model   = Context model (Map String NativeSelection)
 type D3      model t = StateT (D3State model) Effect t
 
--- | get a reference to a simulation that we can use elsewhere (needs to go into context scope)
-interpretSimulation :: forall model. Simulation -> 
-                              (model -> Array Node) ->
-                              (model -> Array Link) ->
+-- |                   FORCE LAYOUT (SIMULATION) interpreter
+
+-- | get a reference to a simulation that we can then use elsewhere
+-- | ie having interpreted a Selection such that the DOM is set up to run a simulation
+interpretSimulation :: forall model node link. Simulation -> 
+                              (model -> Array node) ->
+                              (model -> Array link) ->
                               D3 model Unit
-interpretSimulation (Simulation simulation) getNodes getLinks =
+interpretSimulation (Simulation r) getNodes getLinks =
   do
     (Context model scope) <- get
-    let sim = initSimulationJS simulation.config
-        nodes = getNodes model
-        links = getLinks model
-    updateScope sim (Just simulation.label)
-    traverse_ interpretForce simulation.forces
-    putNodesInSimulationJS sim nodes
-    putLinksInSimulationJS sim links
+    let sim = initSimulationJS r.config
+        nodes = nativeNodes $ getNodes model
+        links = nativeLinks $ getLinks model
+    updateScope sim (Just r.label)
+    traverse_ (interpretForce sim) r.forces
+    let _ = putNodesInSimulationJS sim nodes
+        _ = putLinksInSimulationJS sim links
     -- attach tick, end, drag handlers etc
-    startSimulationJS
+        _ = startSimulationJS
     pure unit
+  where
+    nativeNodes = unsafeCoerce :: Array node -> Array NativeJS
+    nativeLinks = unsafeCoerce :: Array link -> Array NativeJS
 
-foreign import putNodesInSimulationJS :: Simulation -> Array Node -> Unit
-foreign import putLinksInSimulationJS :: Simulation -> Array Link -> Unit
-foreign import startSimulationJS      :: Simulation -> Unit
-foreign import stopSimulationJS       :: Simulation -> Unit
-foreign import forceManyJS            :: Simulation -> String -> Unit
-foreign import forceCenterJS          :: Simulation -> String -> Number -> Number -> Unit
--- foreign import forceLinks             :: Simulation -> String -> Unit
-foreign import forceCollideJS         :: Simulation -> String -> Number -> Unit
-foreign import forceXJS               :: Simulation -> String -> Number -> Unit
-foreign import forceYJS               :: Simulation -> String -> Number -> Unit
-foreign import forceRadialJS          :: Simulation -> String -> Number -> Number -> Unit
 
-interpretForce :: forall model. Simulation -> Force -> D3 model Unit
-interpretForce simulation = 
+
+interpretForce :: forall model. NativeSelection -> Force -> D3 model Unit
+interpretForce simulation = do
   case _ of
-    (Force label ForceMany)                 -> forceManyJS simulation label 
-    (Force label (ForceCenter cx cy))       -> forceCenterJS simulation label cx cy
-    -- (Force (ForceLink links idFn)) -> forceLinks
-    (Force label (ForceCollide radius))     -> forceCollideJS simulation label radius
-    (Force label (ForceX x))                -> forceXJS simulation label x
-    (Force label (ForceY y))                -> forceYJS simulation label y
-    (Force label (ForceRadial cx cy))       -> forceRadialJS simulation label cx cy
-    (Force label Custom)                    -> pure unit -- do this later as needed
+    (Force label ForceMany)                 -> pure $ forceManyJS simulation label 
+    (Force label (ForceCenter cx cy))       -> pure $ forceCenterJS simulation label cx cy
+    -- (Force (ForceLink links idFn)) -> pure $ forceLinks
+    (Force label (ForceCollide radius))     -> pure $ forceCollideJS simulation label radius
+    (Force label (ForceX x))                -> pure $ forceXJS simulation label x
+    (Force label (ForceY y))                -> pure $ forceYJS simulation label y
+    (Force label (ForceRadial cx cy))       -> pure $ forceRadialJS simulation label cx cy
+    (Force label Custom)                    -> pure $ unit -- do this later as needed
+
+
+-- |               SELECTION interpreter
 
 -- TODO fugly, fix later
 interpretSelection :: forall model. Selection model -> D3 model Unit
@@ -129,17 +161,3 @@ numberToNativeJS = unsafeCoerce
 
 arrayNumberToNativeJS :: Array Number -> NativeJS
 arrayNumberToNativeJS = unsafeCoerce
-
--- all this FFI stuff can be made Effect Unit later 
-foreign import runSimpleAttrJS :: NativeSelection -> String -> NativeJS -> Unit
-foreign import runDatumAttrJS :: forall f. NativeSelection -> String -> f -> Unit
-foreign import runDatumIndexAttrJS :: forall f. NativeSelection -> String -> f -> Unit
-foreign import d3SelectAllJS :: String -> NativeSelection
-foreign import d3AppendElementJS :: NativeSelection -> String -> NativeSelection
--- foreign import d3EnterElementJS :: NativeSelection -> String -> NativeSelection
-foreign import d3JoinJS :: forall d. NativeSelection -> String -> d -> NativeSelection
-foreign import d3JoinWithIndexJS :: forall d. NativeSelection -> d -> (d -> NativeJS) -> NativeSelection
-foreign import nullSelectionJS :: NativeSelection
-foreign import data NativeJS :: Type
-
-foreign import initSimulationJS :: SimulationRecord -> Unit

@@ -13,7 +13,8 @@ import Data.Maybe(Maybe(..))
 
 -- | these foreign types allow us to work with some very funky typing without 
 -- | adding tonnes of syntactic noise or type complexity
--- NativeSelection is an opaque type which we keep in order to feed it back to D3 when we look up named Selections and Transitions
+-- | NativeSelection is an opaque type which we keep in order to feed it back to D3 
+-- | when we look up named Selections, Transitions, Simulations, whatever
 foreign import data NativeSelection :: Type
 -- | The Datum models the (variable / polymorphic) type of the lambdas used in Attr
 foreign import data Datum       :: Type
@@ -51,10 +52,10 @@ data ForceType =
     ForceMany
   | ForceCenter Number Number
   -- | ForceLink (Array Link) IdFn
-  | ForceCollide
-  | ForceX
-  | ForceY
-  | ForceRadial
+  | ForceCollide Number
+  | ForceX Number
+  | ForceY Number
+  | ForceRadial Number Number
   | Custom
 
 type SimulationRecord = { 
