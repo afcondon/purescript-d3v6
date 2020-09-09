@@ -2,12 +2,11 @@ module Main where
 
 import Prelude
 
-import Affjax (Error, get)
+import Affjax (get)
 import Affjax.ResponseFormat as ResponseFormat
-import Control.Monad.State (StateT(..), runStateT)
+import Control.Monad.State (StateT, runStateT)
 import D3.Base (Selection)
-import D3.Interpreter (D3, D3State(..), initialScope, interpretSelection, interpretSimulation)
-import Data.Either (Either(..))
+import D3.Interpreter (D3State(..), initialScope, interpretSelection, interpretSimulation)
 import Data.Int (toNumber)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)

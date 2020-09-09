@@ -36,7 +36,7 @@ exports.initSimulationJS = config => {
 //  :: Simulation -> Array NativeNode -> Array NativeNode
 exports.putNodesInSimulationJS = simulation => nodes => { simulation.nodes(nodes); return nodes }
 //  :: Simulation -> Array NativeLink -> Array NativeLink
-exports.putLinksInSimulationJS = simulation => links => { simulation.links(links); return links }
+exports.putLinksInSimulationJS = simulation => links => { simulation.force("links", d3.forceLink(links).id(d => d.id)); return links }
 //  :: Unit -> Unit
 exports.startSimulationJS = simulation => simulation.restart()
 //  :: Unit -> Unit
