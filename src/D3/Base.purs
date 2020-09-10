@@ -10,6 +10,7 @@ module D3.Base (
 
 import Prelude
 
+import D3.Interpreter (ScaleDomain)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 
@@ -155,6 +156,11 @@ data Attr =
   | StringAttrI      String (Datum -> Number -> String)
   | NumberAttrI      String (Datum -> Number -> Number)
   | ArrayNumberAttrI String (Datum -> Number -> Array Number)
+
+data Scale = ScaleOrdinal ScaleDomain
+
+
+-- |              Show instance etc
 
 instance showSelection :: Show (Selection a) where
   show (InitialSelect r) = "d3.selectAll(\"" <> r.selector <> "\")" <> " name: " <> show r.label <> " " <> show r.attributes <> show r.children

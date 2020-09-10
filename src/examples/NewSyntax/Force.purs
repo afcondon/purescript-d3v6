@@ -89,7 +89,6 @@ chart (Tuple width height) =
       ]
   ]
 
-type ColorScale = Datum -> String -- TODO replace with better color, ie Web color package
 scale :: ColorScale
 scale _ = "red"
 

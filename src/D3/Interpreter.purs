@@ -50,6 +50,10 @@ foreign import forceCollideJS         :: NativeSelection -> String -> Number -> 
 foreign import forceXJS               :: NativeSelection -> String -> Number -> Unit
 foreign import forceYJS               :: NativeSelection -> String -> Number -> Unit
 foreign import forceRadialJS          :: NativeSelection -> String -> Number -> Number -> Unit
+
+foreign import data ScaleDomain :: Type
+foreign import schemeCategory10 :: Unit -> ScaleDomain
+foreign import scaleOrdinal :: forall d. ScaleDomain -> (d -> String)
 -- foreign import forceLinks             :: NativeSelection -> String -> Unit
 
 -- we model the scope of the JavaScript "script" like this (see README for rationale)
