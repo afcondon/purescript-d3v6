@@ -77,14 +77,14 @@ chart (Tuple width height) =
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [width/2.0,height/2.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ join "link" modelLinks Line
-          (append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] [])
+        [ join "joinlink" modelLinks Line
+          (appendNamed "link" Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] [])
           noUpdate noExit ]
         
       , append Group
         [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-        [ join "node" modelNodes Circle
-          (append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] [])
+        [ join "joinnode" modelNodes Circle
+          (appendNamed "node" Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] [])
           noUpdate noExit ]
       ]
   ]
@@ -129,12 +129,12 @@ nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale
 -- | function to build the tick function, quite tricky
 myTickMap :: TickMap Model
 myTickMap = fromFoldable
-  [ Tuple "link" [ NumberAttr "x1" (\d -> (d3Link d).source.x)
-                 , NumberAttr "y1" (\d -> (d3Link d).source.y)
-                 , NumberAttr "x2" (\d -> (d3Link d).target.x)
-                 , NumberAttr "y2" (\d -> (d3Link d).target.y) ]
-  , Tuple "node" [ NumberAttr "cx" (\d -> (d3Node d).x)
-                 , NumberAttr "cy" (\d -> (d3Node d).y) ]
+  [ Tuple "link" [ NumberAttr "x1" (\d -> (unsafeCoerce d).source.x)
+                 , NumberAttr "y1" (\d -> (unsafeCoerce d).source.y)
+                 , NumberAttr "x2" (\d -> (unsafeCoerce d).target.x)
+                 , NumberAttr "y2" (\d -> (unsafeCoerce d).target.y) ]
+  , Tuple "node" [ NumberAttr "cx" (\d -> (unsafeCoerce d).x)
+                 , NumberAttr "cy" (\d -> (unsafeCoerce d).y) ]
   ]
 
 -- drag = 
