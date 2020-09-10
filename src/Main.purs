@@ -27,8 +27,8 @@ getWindowWidthHeight = do
 interpreter :: Selection Model -> StateT (D3State Model) Effect Unit
 interpreter forceChart = do
   simulation <- interpretSimulation simulation getNodes getLinks makeModel
-  interpretTickMap simulation myTickMap 
   interpretSelection forceChart
+  interpretTickMap simulation myTickMap 
 
 main :: Effect Unit
 main = launchAff_ do -- Aff 
