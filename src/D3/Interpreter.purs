@@ -4,8 +4,8 @@ import Prelude
 
 import Control.Monad.State (StateT, get, modify_, put)
 import D3.Base (Attr(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation(..), SimulationConfig, TickMap)
-import Data.Array (catMaybes, concatMap, filter, foldl, fromFoldable, (:))
-import Data.Bifunctor (bimap, lmap)
+import Data.Array (concatMap, foldl, fromFoldable, (:))
+import Data.Bifunctor (lmap)
 import Data.Foldable (traverse_)
 import Data.Map (Map, empty, insert, lookup, toUnfoldable)
 import Data.Maybe (Maybe(..))
@@ -37,7 +37,7 @@ foreign import nullSelectionJS     ::           NativeSelection
 -- | foreign types associated with Force Layout Simulation
 foreign import initSimulationJS :: SimulationConfig -> NativeSelection
 -- TODO tick functions should be named too, so this should be param'd with a tick NativeSelection too!
-foreign import addAttrFnToTickJS :: forall f. NativeSelection -> Attr -> Unit
+foreign import addAttrFnToTickJS :: NativeSelection -> Attr -> Unit
 foreign import attachTickFnToSimulationJS :: NativeSelection -> Unit
 
 foreign import putNodesInSimulationJS :: NativeSelection -> Array NativeJS -> Array NativeJS
@@ -61,6 +61,11 @@ initialScope = empty
 type D3 model t      = StateT (D3State model) Effect t
 
 -- |                   FORCE LAYOUT (SIMULATION) interpreter
+startSimulation :: forall model. NativeSelection -> D3 model Unit
+startSimulation simulation = pure $ startSimulationJS simulation
+
+stopSimulation :: forall model. NativeSelection -> D3 model Unit
+stopSimulation simulation = pure $ stopSimulationJS simulation
 
 -- | get a reference to a simulation that we can then use elsewhere
 -- | ie having interpreted a Selection such that the DOM is set up to run a simulation
@@ -81,8 +86,6 @@ interpretSimulation (Simulation r) getNodes getLinks repackage =
     let initializedNodes = unnativeNodes $ putNodesInSimulationJS sim nodes
         initializedLinks = unnativeLinks $ putLinksInSimulationJS sim links
         initializedModel = repackage initializedLinks initializedNodes
-        -- attach tick, end, drag handlers etc
-        _ = startSimulationJS -- possibly we'll prefer to never start during init?
     put (Context initializedModel scope)
     pure sim
   where
@@ -90,8 +93,6 @@ interpretSimulation (Simulation r) getNodes getLinks repackage =
     nativeLinks   = unsafeCoerce :: Array link -> Array NativeJS
     unnativeNodes = unsafeCoerce :: Array NativeJS -> Array node
     unnativeLinks = unsafeCoerce :: Array NativeJS -> Array link
-
-
 
 interpretForce :: forall model. NativeSelection -> Force -> D3 model Unit
 interpretForce simulation = do

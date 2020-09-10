@@ -6,7 +6,7 @@ import Affjax (get)
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.State (StateT, runStateT)
 import D3.Base (Selection)
-import D3.Interpreter (D3State(..), initialScope, interpretSelection, interpretSimulation, interpretTickMap)
+import D3.Interpreter (D3State(..), initialScope, interpretSelection, interpretSimulation, interpretTickMap, startSimulation)
 import Data.Int (toNumber)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
@@ -29,6 +29,7 @@ interpreter forceChart = do
   simulation <- interpretSimulation simulation getNodes getLinks makeModel
   interpretSelection forceChart
   interpretTickMap simulation myTickMap 
+  startSimulation simulation
 
 main :: Effect Unit
 main = launchAff_ do -- Aff 
