@@ -43,11 +43,16 @@ exports.startSimulationJS = simulation => simulation.restart()
 exports.stopSimulationJS = simulation => simulation.stop()
 
 var tickAttrArray = [] // TODO probably want API to reset this too, but defer til adding named tick functions
-exports.addAttrFnToTickJS = selection => attr => {
-  console.log('add to list of things to do on each tick');
+exports.addAttrFnToTickJS = selection => pursAttr => {
+  tickAttrArray.push({ selection: selection, attr: pursAttr.value0, fn: pursAttr.value1 })
 } 
 exports.attachTickFnToSimulationJS = simulation => { 
-  console.log('i should be adding all the attrs into tick here');
+  // assumes we've put all the things we want to happen into the tickAttrArray
+  simulation.on("tick"), () => { 
+    tickAttrArray.forEach(element => {
+      (element.selection).attr(element.attr, element.fn)
+    })
+  }
 }
 
 //            FORCE functions 
