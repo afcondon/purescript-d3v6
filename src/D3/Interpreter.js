@@ -34,9 +34,15 @@ exports.initSimulationJS = config => {
             .velocityDecay(config.velocityDecay) // default is 0.4
 }
 //  :: Simulation -> Array NativeNode -> Array NativeNode
-exports.putNodesInSimulationJS = simulation => nodes => { simulation.nodes(nodes); return nodes }
+exports.putNodesInSimulationJS = simulation => nodes => { 
+  simulation.nodes(nodes)
+  return nodes
+}
 //  :: Simulation -> Array NativeLink -> Array NativeLink
-exports.putLinksInSimulationJS = simulation => links => { simulation.force("links", d3.forceLink(links).id(d => d.id)); return links }
+exports.putLinksInSimulationJS = simulation => links => { 
+  simulation.force("links", d3.forceLink(links).id(d => d.id))
+  return links
+}
 //  :: Unit -> Unit
 exports.startSimulationJS = simulation => simulation.restart()
 //  :: Unit -> Unit
@@ -46,14 +52,10 @@ var tickAttrArray = [] // TODO probably want API to reset this too, but defer ti
 exports.addAttrFnToTickJS = selection => pursAttr => {
   tickAttrArray.push({ selection: selection, attr: pursAttr.value0, fn: pursAttr.value1 })
 } 
-exports.attachTickFnToSimulationJS = simulation => { 
-  // assumes we've put all the things we want to happen into the tickAttrArray
-  simulation.on("tick"), () => { 
-    tickAttrArray.forEach(element => {
-      (element.selection).attr(element.attr, element.fn)
-    })
-  }
-}
+// assumes we've already put all the things we want to happen into the tickAttrArray
+exports.attachTickFnToSimulationJS = simulation => simulation.on("tick", () => {
+  tickAttrArray.forEach(element => (element.selection).attr(element.attr, element.fn))
+})
 
 //            FORCE functions 
 // :: Simulation -> Unit
