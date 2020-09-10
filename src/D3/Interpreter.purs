@@ -3,10 +3,13 @@ module D3.Interpreter where
 import Prelude
 
 import Control.Monad.State (StateT, get, modify_, put)
-import D3.Base (Attr(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation(..), SimulationConfig)
+import D3.Base (Attr(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation(..), SimulationConfig, TickMap)
+import Data.Array (catMaybes, concatMap, filter, foldl, fromFoldable, (:))
+import Data.Bifunctor (bimap, lmap)
 import Data.Foldable (traverse_)
-import Data.Map (Map, empty, insert)
+import Data.Map (Map, empty, insert, lookup, toUnfoldable)
 import Data.Maybe (Maybe(..))
+import Data.Tuple (Tuple(..))
 import Debug.Trace (spy)
 import Effect (Effect)
 import Unsafe.Coerce (unsafeCoerce)
@@ -33,7 +36,9 @@ foreign import nullSelectionJS     ::           NativeSelection
 
 -- | foreign types associated with Force Layout Simulation
 foreign import initSimulationJS :: SimulationConfig -> NativeSelection
--- | TODO NB NativeSelection here includes "NativeSimulation" and so is mis-named
+-- TODO tick functions should be named too, so this should be param'd with a tick NativeSelection too!
+foreign import addAttrFnToTickJS :: forall f. NativeSelection -> Attr -> Unit
+foreign import attachTickFnToSimulationJS :: NativeSelection -> Unit
 
 foreign import putNodesInSimulationJS :: NativeSelection -> Array NativeJS -> Array NativeJS
 foreign import putLinksInSimulationJS :: NativeSelection -> Array NativeJS -> Array NativeJS
@@ -64,7 +69,7 @@ interpretSimulation :: forall model node link. Simulation ->
                               (model -> Array node) ->  -- project nodes from model
                               (model -> Array link) ->  -- project links from model
                               (Array link -> Array node -> model) -> -- repackage nodes & links as model
-                              D3 model Unit
+                              D3 model NativeSelection
 interpretSimulation (Simulation r) getNodes getLinks repackage =
   do
     (Context model scope) <- get
@@ -79,6 +84,7 @@ interpretSimulation (Simulation r) getNodes getLinks repackage =
         -- attach tick, end, drag handlers etc
         _ = startSimulationJS -- possibly we'll prefer to never start during init?
     put (Context initializedModel scope)
+    pure sim
   where
     nativeNodes   = unsafeCoerce :: Array node -> Array NativeJS
     nativeLinks   = unsafeCoerce :: Array link -> Array NativeJS
@@ -99,6 +105,41 @@ interpretForce simulation = do
     (Force label (ForceRadial cx cy))       -> pure $ forceRadialJS simulation label cx cy
     (Force label Custom)                    -> pure $ unit -- do this later as needed
 
+-- getNativeSelections :: Map String NativeSelection -> TickMap model -> Array (Tuple NativeSelection (Array (Tuple attr fn)))
+-- getNativeSelections scope []
+
+
+getNativeSelection :: forall x. (Map String NativeSelection) -> Map String x -> Array (Tuple NativeSelection x)
+getNativeSelection scopeMap tickMap = fromFoldable nativeTuples
+  where
+    tickTuples :: Array (Tuple String x)
+    tickTuples = toUnfoldable tickMap
+
+    maybeNativeTuple :: Tuple String x -> Tuple (Maybe NativeSelection) x
+    maybeNativeTuple = lmap (flip lookup scopeMap)
+
+    maybeNativeTuples :: Array (Tuple (Maybe NativeSelection) x)
+    maybeNativeTuples = maybeNativeTuple <$> tickTuples
+
+    nativeTuples :: Array (Tuple NativeSelection x)
+    nativeTuples = foldl foldFn [] maybeNativeTuples 
+
+    foldFn list (Tuple (Just a) b) = (Tuple a b) : list
+    foldFn list (Tuple Nothing _)  = list
+
+addAttrFnToTick :: forall model. Tuple NativeSelection Attr -> D3 model Unit
+addAttrFnToTick (Tuple selection attr) = pure $ addAttrFnToTickJS selection attr 
+
+interpretTickMap :: forall model. NativeSelection -> TickMap model -> D3 model Unit
+interpretTickMap simulation tickMap = do
+  (Context _ scope) <- get
+  --  [(label,attrs)] -> [(nativeselection, attr)] so as enable build up of list on JS side
+  let 
+    attrs :: Array (Tuple NativeSelection Attr)
+    attrs = concatMap (\(Tuple x ys) -> (Tuple x) <$> ys) (getNativeSelection scope tickMap)
+  -- TODO pending better solution will pass Attr (purescript type) over FFI and decode there
+  traverse_ addAttrFnToTick attrs
+  pure $ attachTickFnToSimulationJS simulation
 
 -- |               SELECTION interpreter
 
@@ -147,6 +188,8 @@ updateScope selection Nothing      = pure unit
 updateScope selection (Just label) =
   modify_ (\(Context model scope) -> Context model (insert label selection scope))
 
+-- interprets and calls D3 directly, as opposed to storing attr associations on JS side,
+-- as is needed for, for example tick function
 applyAttr :: forall model. NativeSelection -> Attr -> D3 model Unit
 applyAttr selection = case _ of
     (StaticString attr value)      -> pure $ runSimpleAttrJS selection attr (stringToNativeJS value)
@@ -160,7 +203,6 @@ applyAttr selection = case _ of
     (StringAttrI attr fnDI)        -> pure $ runDatumIndexAttrJS selection attr fnDI
     (NumberAttrI attr fnDI)        -> pure $ runDatumIndexAttrJS selection attr fnDI
     (ArrayNumberAttrI attr fnDI)   -> pure $ runDatumIndexAttrJS selection attr fnDI
-
 
 stringToNativeJS :: String -> NativeJS
 stringToNativeJS = unsafeCoerce

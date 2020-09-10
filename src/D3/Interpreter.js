@@ -42,6 +42,14 @@ exports.startSimulationJS = simulation => simulation.restart()
 //  :: Unit -> Unit
 exports.stopSimulationJS = simulation => simulation.stop()
 
+var tickAttrArray = [] // TODO probably want API to reset this too, but defer til adding named tick functions
+exports.addAttrFnToTickJS = selection => attr => {
+  console.log('add to list of things to do on each tick');
+} 
+exports.attachTickFnToSimulationJS = simulation => { 
+  console.log('i should be adding all the attrs into tick here');
+}
+
 //            FORCE functions 
 // :: Simulation -> Unit
 exports.forceManyJS = simulation => label => simulation.force(label, d3.forceManyBody())

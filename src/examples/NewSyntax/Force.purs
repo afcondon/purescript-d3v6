@@ -2,6 +2,7 @@ module NewSyntax.Force (
     chart, simulation
   , Model, GraphLink, GraphNode
   , getLinks, getNodes, makeModel
+  , myTickMap
   , readModelFromFileContents) where
 
 import D3.Base
@@ -9,6 +10,7 @@ import D3.Base
 import Affjax (Error)
 import Data.Array (singleton)
 import Data.Either (Either(..))
+import Data.Map (Map, fromFoldable)
 import Data.Tuple (Tuple(..))
 import Debug.Trace (spy)
 import Math (sqrt)
@@ -124,18 +126,16 @@ linkEnter = append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value
 nodeEnter :: Selection Model
 nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] []
 
-
-
 -- | function to build the tick function, quite tricky
-myTickFunction :: Selection Model-> Selection Model -> Array (Tuple (Selection Model) (Array Attr) )
-myTickFunction link node = [
-    Tuple link [  NumberAttr "x1" (\d -> (d3Link d).source.x)
-                , NumberAttr "y1" (\d -> (d3Link d).source.y)
-                , NumberAttr "x2" (\d -> (d3Link d).target.x)
-                , NumberAttr "y2" (\d -> (d3Link d).target.y) ]
-  , Tuple node [  NumberAttr "cx" (\d -> (d3Node d).x
- )              , NumberAttr "cy" (\d -> (d3Node d).y) ]
-]
+myTickMap :: TickMap Model
+myTickMap = fromFoldable
+  [ Tuple "link" [ NumberAttr "x1" (\d -> (d3Link d).source.x)
+                 , NumberAttr "y1" (\d -> (d3Link d).source.y)
+                 , NumberAttr "x2" (\d -> (d3Link d).target.x)
+                 , NumberAttr "y2" (\d -> (d3Link d).target.y) ]
+  , Tuple "node" [ NumberAttr "cx" (\d -> (d3Node d).x)
+                 , NumberAttr "cy" (\d -> (d3Node d).y) ]
+  ]
 
 -- drag = 
 --   d3Drag "node" simulation {
@@ -144,6 +144,6 @@ myTickFunction link node = [
 --     , end:   dragended
 --   }
 
--- attachTickFunction :: (Unit -> Unit) -> Simulation -> Unit
--- attachTickFunction tick simulation = 
+-- attachTickMap :: (Unit -> Unit) -> Simulation -> Unit
+-- attachTickMap tick simulation = 
 

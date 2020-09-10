@@ -1,7 +1,7 @@
 module D3.Base (
     initialSelect, append, appendNamed, join, transition, transitionNamed
   , Datum, SubModel, NativeSelection
-  , Attr(..)
+  , Attr(..), TickMap
   , Selection(..) -- only exported here to build interpreter, will be hidden when code tidied up
   , Element(..), noUpdate, noExit, emptySelection
   , Force(..), ForceType(..), Link, Node, IdFn, ID, Label
@@ -9,7 +9,9 @@ module D3.Base (
 ) where
 
 import Prelude
-import Data.Maybe(Maybe(..))
+
+import Data.Map (Map)
+import Data.Maybe (Maybe(..))
 
 -- | these foreign types allow us to work with some very funky typing without 
 -- | adding tonnes of syntactic noise or type complexity
@@ -68,6 +70,9 @@ type SimulationRecord = {
   , drag   :: Simulation -> Unit -- could be Effect Unit
 }
 data Simulation = Simulation SimulationRecord
+type TickMap model = Map String (Array Attr)
+
+
 
 -- | Types to represent Selection and Insertion
 -- | you can append a list of many (different) elements 

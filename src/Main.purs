@@ -6,13 +6,13 @@ import Affjax (get)
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.State (StateT, runStateT)
 import D3.Base (Selection)
-import D3.Interpreter (D3State(..), initialScope, interpretSelection, interpretSimulation)
+import D3.Interpreter (D3State(..), initialScope, interpretSelection, interpretSimulation, interpretTickMap)
 import Data.Int (toNumber)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
-import NewSyntax.Force (Model, makeModel, chart, readModelFromFileContents, simulation, getLinks, getNodes)
+import NewSyntax.Force (Model, chart, getLinks, getNodes, makeModel, myTickMap, readModelFromFileContents, simulation)
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
 
@@ -26,7 +26,8 @@ getWindowWidthHeight = do
 -- interpreter :: forall model. Selection model -> StateT (D3State model) Effect Unit
 interpreter :: Selection Model -> StateT (D3State Model) Effect Unit
 interpreter forceChart = do
-  interpretSimulation simulation getNodes getLinks makeModel
+  simulation <- interpretSimulation simulation getNodes getLinks makeModel
+  interpretTickMap simulation myTickMap 
   interpretSelection forceChart
 
 main :: Effect Unit
