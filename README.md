@@ -21,30 +21,19 @@ the FFI implmentations underneath the interpreter are stubbed out to console.
 ```purescript
 chart :: Tuple Number Number -> Selection Model
 chart (Tuple width height) = 
-  initialSelect "div#force" "forceLayout" [] $ singleton $ 
-    appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
-      append Group
-        [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ join "link" modelLinks linkEnter noUpdate noExit ]
+  initialSelect "div#force" "forceLayout" [] $ [
+    appendNamed "svg" Svg [ viewBox 0.0 0.0 width height ] [
+      append Group [ strokeColor "#999", strokeOpacity 0.6 ] 
+        [ join Line modelLinks
+          (appendNamed "link" Line [ strokeWidth_D (\d -> sqrt (d3Link d).value)] [])
+          noUpdate noExit ]
         
-      , append Group
-        [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-        [ join "node" modelNodes nodeEnter noUpdate noExit ]
+      , append Group [ strokeColor "#fff", strokeOpacity 1.5 ]
+        [ join Circle modelNodes
+          (appendNamed "node" Circle [ radius 5.0, fill_D colorByGroup] [])
+          noUpdate noExit ]
       ]
-
--- Projection functions to get subModels out of the Model for sub-selections
-modelLinks :: Model -> SubModel
-modelLinks model = unsafeCoerce model.links
-
-modelNodes :: Model -> SubModel
-modelNodes model = unsafeCoerce model.nodes
-
-linkEnter :: Selection Model
-linkEnter = append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] []
-
-nodeEnter :: Selection Model
-nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] []
-
+  ]
 ```
 
 ## Compare to this JS for example
@@ -80,7 +69,7 @@ A concrete example: the D3 hierarchy structure by default expects the children f
 
 Tentative decision - replicate the munging, but pick a statically typed standard for things like hierarchy and either convert before sending or send JSON that can be parsed correctly by D3's own defaults
 
-CURRENT SOLUTION - using judicious `unsafeCoerce`-based functions to just work with the JavaScript-native data. Seems like a good compromise to retain readability of abstract chart definition (primary goal).
+CURRENT SOLUTION - using judicious `unsafeCoerce`-based functions to just work with the JavaScript-native data. Seems like a good compromise to retain readability of abstract chart definition (primary goal). Importantly, the writer of the "D3" script DSL doesn't do the unsafe coercions, they're handled by the internals.
 
 ## Use something more like Variant for attributes
 Simple values probably not a problem but all the `.attr("foo", d => d.bar * 2)` or, worse, `.attr("foo", d => purescriptFn(d))` cases might be more complicated
