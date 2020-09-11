@@ -4,7 +4,7 @@ import Prelude
 
 import Control.Monad.State (StateT, get, modify_, put)
 import D3.Base (Attr(..), DragBehavior(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation(..), SimulationConfig, TickMap)
-import Data.Array (concatMap, foldl, fromFoldable, (:))
+import Data.Array (concatMap, foldl, fromFoldable, reverse, (:))
 import Data.Bifunctor (lmap)
 import Data.Foldable (traverse_)
 import Data.Map (Map, empty, insert, lookup, toUnfoldable)
@@ -176,7 +176,7 @@ go activeSelection selection = do
           let appendSelection = spy "Append" d3AppendElementJS activeSelection (show r.element)
           updateScope appendSelection r.label
           traverse_ (applyAttr appendSelection) r.attributes
-          traverse_ (go appendSelection) r.children
+          traverse_ (go appendSelection) (reverse r.children)
           pure unit
 
     (Join r) -> do
