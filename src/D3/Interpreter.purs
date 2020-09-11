@@ -51,11 +51,6 @@ foreign import forceXJS               :: NativeSelection -> String -> Number -> 
 foreign import forceYJS               :: NativeSelection -> String -> Number -> Unit
 foreign import forceRadialJS          :: NativeSelection -> String -> Number -> Number -> Unit
 
-foreign import data ScaleDomain :: Type
-foreign import schemeCategory10 :: Unit -> ScaleDomain
-foreign import scaleOrdinal :: forall d. ScaleDomain -> (d -> String)
--- foreign import forceLinks             :: NativeSelection -> String -> Unit
-
 -- we model the scope of the JavaScript "script" like this (see README for rationale)
 data D3State model   = Context model (Map String NativeSelection)
 
@@ -176,7 +171,6 @@ go activeSelection selection = do
     (Join r) -> do
           (Context model scope) <- get
           let joinSelection = d3JoinJS activeSelection (show r.element) (r.projection model)
-          updateScope joinSelection (Just r.label)
           enterSelection  <- go joinSelection r.enter
           -- updateSelection <- go joinSelection r.update
           -- exitSelection   <- go joinSelection r.exit

@@ -73,10 +73,3 @@ exports.forceYJS = simulation => label => cy => simulation.force(label, d3.force
 // :: Simulation -> Number -> Number -> Unit
 exports.forceRadialJS = simulation => label => cx => cy => simulation.force(label, d3.forceRadial(cx, cy))
 
-
-//            COLOR & SCALE functions
-// gross simplification here, scales can take ranges and allsorts
-// we just want to be able to pass d3.schemeCategory10 back in from Purescript to prove the idea tho
-exports.scaleOrdinal = domain => d3.scaleOrdinal(domain)
-
-exports.schemeCategory10 = () => d3.schemeCategory10

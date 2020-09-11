@@ -1,6 +1,9 @@
 module D3.Base (
     initialSelect, append, appendNamed, join, transition, transitionNamed
-  , Datum, SubModel, NativeSelection
+-- foreign (opaque) types for D3 things that are only needed as references on PureScript side
+  , Datum, SubModel, NativeSelection, Scale
+-- foreign functions exported by Base
+  , d3SchemeCategory10
   , Attr(..), TickMap
   , Selection(..) -- only exported here to build interpreter, will be hidden when code tidied up
   , Element(..), noUpdate, noExit, emptySelection
@@ -10,7 +13,6 @@ module D3.Base (
 
 import Prelude
 
-import D3.Interpreter (ScaleDomain)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 
@@ -23,6 +25,8 @@ foreign import data NativeSelection :: Type
 foreign import data Datum       :: Type
 -- | The SubModel is that portion of the Model that we give to a particular Join
 foreign import data SubModel    :: Type
+type Scale = Number -> String 
+foreign import d3SchemeCategory10 :: Scale -- not modelling the scale / domain distinction yet
 
 type Label = String
 type Selector = String
@@ -97,7 +101,6 @@ data Selection model =
   -- d3.selectAll().data().join() pattern
   | Join {
       projection   :: model -> SubModel -- function that can extract submodel for subselection
-    , label        :: String  -- Join must have a name so we can add the enter, merge, exit
     , element      :: Element -- has to agree with the Element in enter/update/exit
     , enter        :: Selection model
     , update       :: Selection model
@@ -126,14 +129,13 @@ noUpdate       = NullSelection :: forall model. Selection model
 noExit         = NullSelection :: forall model. Selection model
 emptySelection = NullSelection :: forall model. Selection model
 
-join :: forall model. String 
+join :: forall model. Element
     -> (model -> SubModel) -- projection function to present only the appropriate data to this join
-    -> Element
     -> Selection model -- minimal definition requires only enter
     -> Selection model -- update is optional (ie can be given NullSelection)
     -> Selection model -- exit is optional (ie can be given NullSelection)
     -> Selection model
-join label projection element enter update exit = Join { label, projection, element, enter, update, exit }
+join element projection enter update exit = Join { projection, element, enter, update, exit }
 
 transition :: forall model. Number -> Array Attr -> Selection model 
 transition duration attributes = 
@@ -157,7 +159,6 @@ data Attr =
   | NumberAttrI      String (Datum -> Number -> Number)
   | ArrayNumberAttrI String (Datum -> Number -> Array Number)
 
-data Scale = ScaleOrdinal ScaleDomain
 
 
 -- |              Show instance etc

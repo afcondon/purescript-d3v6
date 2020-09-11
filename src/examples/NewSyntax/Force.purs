@@ -77,20 +77,20 @@ chart (Tuple width height) =
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0, 0.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ join "joinlink" modelLinks Line
+        [ join Line modelLinks
           (appendNamed "link" Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] [])
           noUpdate noExit ]
         
       , append Group
         [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-        [ join "joinnode" modelNodes Circle
-          (appendNamed "node" Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] [])
+        [ join Circle modelNodes
+          (appendNamed "node" Circle [ StaticNumber "r" 5.0, StringAttr "fill" colorByGroup] [])
           noUpdate noExit ]
       ]
   ]
 
-scale :: ColorScale
-scale _ = "red"
+colorByGroup :: Datum -> String
+colorByGroup d = d3SchemeCategory10 (unsafeCoerce d :: D3GraphNode).group
 
 -- Projection functions to get subModels out of the Model for sub-selections
 modelLinks :: Model -> SubModel
@@ -106,24 +106,24 @@ chartComposed (Tuple width height) =
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-        [ join "link" modelLinks Line
-          linkEnter
+        [ join Line modelLinks
+          (linkEnter "link")
           noUpdate noExit ]
         
       , append Group
         [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-        [ join "node" modelNodes Circle
-          nodeEnter
+        [ join Circle modelNodes
+          (nodeEnter "node") -- the enter is actually the Selection that gets referred to in, for example, tick function
           noUpdate noExit ]
       ]
 
-linkEnter :: Selection Model
-linkEnter = append Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] []
+linkEnter :: String -> Selection Model
+linkEnter label = appendNamed label Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] []
 
 -- TODO note that we are not saying (\d i -> scale d.group) because contents of foreign data Datum
 -- cannot be visible here, some kind of ugly coerce in the scale function, or using FFI may be required
-nodeEnter :: Selection Model
-nodeEnter = append Circle [ StaticNumber "r" 5.0, StringAttr "fill" (\d -> scale d)] []
+nodeEnter :: String -> Selection Model
+nodeEnter label = appendNamed label Circle [ StaticNumber "r" 5.0, StringAttr "fill" colorByGroup] []
 
 -- | function to build the tick function, quite tricky
 myTickMap :: TickMap Model
