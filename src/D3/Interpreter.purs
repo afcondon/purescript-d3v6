@@ -3,7 +3,7 @@ module D3.Interpreter where
 import Prelude
 
 import Control.Monad.State (StateT, get, modify_, put)
-import D3.Base (Attr(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation(..), SimulationConfig, TickMap)
+import D3.Base (Attr(..), DragBehavior(..), Force(..), ForceType(..), NativeSelection, Selection(..), Simulation(..), SimulationConfig, TickMap)
 import Data.Array (concatMap, foldl, fromFoldable, (:))
 import Data.Bifunctor (lmap)
 import Data.Foldable (traverse_)
@@ -39,11 +39,12 @@ foreign import initSimulationJS :: SimulationConfig -> NativeSelection
 -- TODO tick functions should be named too, so this should be param'd with a tick NativeSelection too!
 foreign import addAttrFnToTickJS :: NativeSelection -> Attr -> Unit
 foreign import attachTickFnToSimulationJS :: NativeSelection -> Unit
-
+foreign import attachDefaultDragBehaviorJS :: NativeSelection -> NativeSelection -> Unit
 foreign import putNodesInSimulationJS :: NativeSelection -> Array NativeJS -> Array NativeJS
 foreign import putLinksInSimulationJS :: NativeSelection -> Array NativeJS -> Array NativeJS
 foreign import startSimulationJS      :: NativeSelection -> Unit
 foreign import stopSimulationJS       :: NativeSelection -> Unit
+foreign import setAlphaTargetJS       :: NativeSelection -> Number -> Unit
 foreign import forceManyJS            :: NativeSelection -> String -> Unit
 foreign import forceCenterJS          :: NativeSelection -> String -> Number -> Number -> Unit
 foreign import forceCollideJS         :: NativeSelection -> String -> Number -> Unit
@@ -80,12 +81,12 @@ interpretSimulation (Simulation r) getNodes getLinks repackage =
     let sim = initSimulationJS r.config
         nodes = nativeNodes $ getNodes model
         links = nativeLinks $ getLinks model
-    updateScope sim (Just r.label)
+    -- updateScope sim (Just r.label)
     traverse_ (interpretForce sim) r.forces
     let initializedNodes = unnativeNodes $ putNodesInSimulationJS sim nodes
         initializedLinks = unnativeLinks $ putLinksInSimulationJS sim links
         initializedModel = repackage initializedLinks initializedNodes
-    put (Context initializedModel scope)
+    put (Context initializedModel (insert r.label sim scope))
     pure sim
   where
     nativeNodes   = unsafeCoerce :: Array node -> Array NativeJS
@@ -132,7 +133,7 @@ addAttrFnToTick (Tuple selection attr) = pure $ addAttrFnToTickJS selection attr
 
 interpretTickMap :: forall model. NativeSelection -> TickMap model -> D3 model Unit
 interpretTickMap simulation tickMap = do
-  (Context _ scope) <- get
+  (Context model scope) <- get
   --  [(label,attrs)] -> [(nativeselection, attr)] so as enable build up of list on JS side
   let 
     attrs :: Array (Tuple NativeSelection Attr)
@@ -140,6 +141,16 @@ interpretTickMap simulation tickMap = do
   -- TODO pending better solution will pass Attr (purescript type) over FFI and decode there
   traverse_ addAttrFnToTick attrs
   pure $ attachTickFnToSimulationJS simulation
+
+interpretDrag :: forall model. DragBehavior -> D3 model Unit 
+interpretDrag (DefaultDrag selectionName simulationName) = do
+  (Context model scope) <- get
+  let selection  = lookup selectionName scope
+  let simulation = lookup simulationName scope
+  pure $ case selection, simulation of
+          (Just sel), (Just sim) -> attachDefaultDragBehaviorJS sel sim
+          _, _ -> unit
+
 
 -- |               SELECTION interpreter
 

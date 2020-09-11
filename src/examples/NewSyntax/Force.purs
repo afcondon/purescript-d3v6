@@ -2,7 +2,7 @@ module NewSyntax.Force (
     chart, simulation
   , Model, GraphLink, GraphNode
   , getLinks, getNodes, makeModel
-  , myTickMap
+  , myTickMap, myDrag
   , readModelFromFileContents) where
 
 import D3.Base
@@ -31,12 +31,12 @@ getNodes :: Model -> Array GraphNode
 getNodes m = m.nodes
 
 -- minimal definition for now, need to factor in things added by simulation such as Vx, Vy
-type GraphNode = { x :: Number, y :: Number, group :: Number }
+type GraphNode = SimulationNodeRow { group :: Number }
 type GraphLink = { id :: ID, source :: ID, target :: ID, value :: Number }
 
+-- | express the additions that D3 makes in terms of rows for clarity and DRY
 -- after the GraphLink type has been bound in D3 it is changed to the following
-type D3GraphNode = { x :: Number, y :: Number, group :: Number, vx :: Number, vy :: Number, index :: Number }
-type D3GraphLink = { id :: ID, source :: D3GraphNode, target :: D3GraphNode, value :: Number }
+type D3GraphLink = { id :: ID, source :: GraphNode, target :: GraphNode, value :: Number }
 
 -- do the decode on the Purescript side unless files are ginormous, this is just for prototyping
 foreign import readJSONJS :: String -> Model -- TODO no error handling at all here RN
@@ -68,7 +68,7 @@ simulation =
 -- static type representations AND lightweight syntax with JS compatible lambdas
 d3Link :: Datum -> D3GraphLink
 d3Link = unsafeCoerce
-d3Node :: Datum -> D3GraphNode
+d3Node :: Datum -> GraphNode
 d3Node = unsafeCoerce
 
 chart :: Tuple Number Number -> Selection Model
@@ -90,7 +90,7 @@ chart (Tuple width height) =
   ]
 
 colorByGroup :: Datum -> String
-colorByGroup d = d3SchemeCategory10 (unsafeCoerce d :: D3GraphNode).group
+colorByGroup d = d3SchemeCategory10JS (unsafeCoerce d :: GraphNode).group
 
 -- Projection functions to get subModels out of the Model for sub-selections
 modelLinks :: Model -> SubModel
@@ -135,6 +135,9 @@ myTickMap = fromFoldable
   , Tuple "node" [ NumberAttr "cx" (\d -> (unsafeCoerce d).x)
                  , NumberAttr "cy" (\d -> (unsafeCoerce d).y) ]
   ]
+
+myDrag :: DragBehavior
+myDrag = DefaultDrag "node" "simulation"
 
 -- drag = 
 --   d3Drag "node" simulation {

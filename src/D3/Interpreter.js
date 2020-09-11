@@ -43,9 +43,11 @@ exports.putLinksInSimulationJS = simulation => links => {
   simulation.force("links", d3.forceLink(links).id(d => d.id))
   return links
 }
-//  :: Unit -> Unit
+// :: NativeSelection -> Number -> Unit
+exports.setAlphaTargetJS = simulation => target => simulation.alphaTarget(target)
+//  :: NativeSelection -> Unit
 exports.startSimulationJS = simulation => simulation.restart()
-//  :: Unit -> Unit
+//  :: NativeSelection -> Unit
 exports.stopSimulationJS = simulation => simulation.stop()
 
 var tickAttrArray = [] // TODO probably want API to reset this too, but defer til adding named tick functions
@@ -56,6 +58,35 @@ exports.addAttrFnToTickJS = selection => pursAttr => {
 exports.attachTickFnToSimulationJS = simulation => simulation.on("tick", () => {
   tickAttrArray.forEach(element => (element.selection).attr(element.attr, element.fn))
 })
+// default drag function, useful in probably most simulations
+exports.attachDefaultDragBehaviorJS = selection => simulation => {
+  
+  var drag = function(simulation) {
+    function dragstarted(event, d) {
+      if (!event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+    
+    function dragged(event,d) {
+      d.fx = event.x;
+      d.fy = event.y;
+    }
+    
+    function dragended(event,d) {
+      if (!event.active) simulation.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+    
+    return d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended);  
+  }
+
+  selection.call(drag(simulation))
+}
 
 //            FORCE functions 
 // :: Simulation -> Unit

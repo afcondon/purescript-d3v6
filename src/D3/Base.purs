@@ -3,12 +3,12 @@ module D3.Base (
 -- foreign (opaque) types for D3 things that are only needed as references on PureScript side
   , Datum, SubModel, NativeSelection, Scale
 -- foreign functions exported by Base
-  , d3SchemeCategory10
-  , Attr(..), TickMap
+  , d3SchemeCategory10JS
+  , Attr(..), TickMap, DragBehavior(..)
   , Selection(..) -- only exported here to build interpreter, will be hidden when code tidied up
   , Element(..), noUpdate, noExit, emptySelection
   , Force(..), ForceType(..), Link, Node, IdFn, ID, Label
-  , Simulation(..), SimulationRecord, SimulationConfig, defaultConfigSimulation
+  , Simulation(..), SimulationRecord, SimulationConfig, defaultConfigSimulation, SimulationNodeRow
 ) where
 
 import Prelude
@@ -25,8 +25,8 @@ foreign import data NativeSelection :: Type
 foreign import data Datum       :: Type
 -- | The SubModel is that portion of the Model that we give to a particular Join
 foreign import data SubModel    :: Type
-type Scale = Number -> String 
-foreign import d3SchemeCategory10 :: Scale -- not modelling the scale / domain distinction yet
+type Scale = Number -> String
+foreign import d3SchemeCategory10JS :: Scale -- not modelling the scale / domain distinction yet
 
 type Label = String
 type Selector = String
@@ -48,6 +48,8 @@ defaultConfigSimulation = {
     , alphaDecay   : 0.0228
     , velocityDecay: 0.4
 }
+-- this is the row that gets added ot your Model's nodes when initialized by D3
+type SimulationNodeRow r = { x :: Number, y :: Number, group :: Number, vx :: Number, vy :: Number, index :: Number }
 
 -- | Force Layout core types
 type ID = Int -- TODO this needs to be polymorphic eventually
@@ -76,8 +78,7 @@ type SimulationRecord = {
 }
 data Simulation = Simulation SimulationRecord
 type TickMap model = Map String (Array Attr)
-
-
+data DragBehavior = DefaultDrag String String -- only one implementation rn and implemented on JS side 
 
 -- | Types to represent Selection and Insertion
 -- | you can append a list of many (different) elements 
