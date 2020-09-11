@@ -9,6 +9,7 @@ module D3.Base (
   , Element(..), noUpdate, noExit, emptySelection
   , Force(..), ForceType(..), Link, Node, IdFn, ID, Label
   , Simulation(..), SimulationRecord, SimulationConfig, defaultConfigSimulation, SimulationNodeRow
+  , strokeColor, strokeColor_D, strokeWidth, strokeWidth_D, strokeOpacity, strokeOpacity_D, radius, radius_D, fill, fill_D, viewBox
 ) where
 
 import Prelude
@@ -146,6 +147,7 @@ transitionNamed :: forall model. Label -> Number -> Array Attr -> Selection mode
 transitionNamed label duration attributes = 
   Transition { label: Just label, duration, attributes }
 
+-- internal definitions of Attrs, this is what the interpreter will work with
 data Attr =
 -- first the direct, static attributes
     StaticString    String String
@@ -160,6 +162,40 @@ data Attr =
   | NumberAttrI      String (Datum -> Number -> Number)
   | ArrayNumberAttrI String (Datum -> Number -> Array Number)
 
+-- prettier definitions for attributes
+strokeColor :: String -> Attr
+strokeColor = StaticString "stroke"
+
+strokeColor_D :: (Datum -> String) -> Attr
+strokeColor_D = StringAttr "stroke"
+
+strokeWidth :: Number -> Attr
+strokeWidth = StaticNumber "stroke"
+
+strokeWidth_D :: (Datum -> Number) -> Attr
+strokeWidth_D = NumberAttr "stroke"
+  
+strokeOpacity :: Number -> Attr
+strokeOpacity = StaticNumber "stroke-opacity"
+
+strokeOpacity_D :: (Datum -> Number) -> Attr
+strokeOpacity_D = NumberAttr "stroke-opacity"
+
+radius :: Number -> Attr
+radius = StaticNumber "r"
+
+radius_D :: (Datum -> Number) -> Attr
+radius_D = NumberAttr "r"
+
+fill :: String -> Attr
+fill = StaticString "fill"
+
+fill_D :: (Datum -> String) -> Attr
+fill_D = StringAttr "fill"
+
+viewBox :: Number -> Number -> Number -> Number -> Attr
+viewBox xo yo width height = StaticArrayNumber "viewBox" [ xo, yo, width, height ]
+  
 
 
 -- |              Show instance etc

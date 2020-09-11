@@ -74,17 +74,15 @@ d3Node = unsafeCoerce
 chart :: Tuple Number Number -> Selection Model
 chart (Tuple width height) = 
   initialSelect "div#force" "forceLayout" [] $ [
-    appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0, 0.0,width,height] ] [
-      append Group
-        [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
+    appendNamed "svg" Svg [ viewBox 0.0 0.0 width height ] [
+      append Group [ strokeColor "#999", strokeOpacity 0.6 ] 
         [ join Line modelLinks
-          (appendNamed "link" Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] [])
+          (appendNamed "link" Line [ strokeWidth_D (\d -> sqrt (d3Link d).value)] [])
           noUpdate noExit ]
         
-      , append Group
-        [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
+      , append Group [ strokeColor "#fff", strokeOpacity 1.5 ]
         [ join Circle modelNodes
-          (appendNamed "node" Circle [ StaticNumber "r" 5.0, StringAttr "fill" colorByGroup] [])
+          (appendNamed "node" Circle [ radius 5.0, fill_D colorByGroup] [])
           noUpdate noExit ]
       ]
   ]
