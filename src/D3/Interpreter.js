@@ -8,7 +8,8 @@ exports.runSimpleAttrJS = selection => attr => value => selection.attr(attr, val
 exports.runDatumAttrJS = selection => attr => f => selection.attr(attr, f)
 // :: forall f. NativeSelection -> String -> f -> Unit
 exports.runDatumIndexAttrJS = selection => attr => f => selection.attr(attr, d => i => f(d)(i))
-
+// foreign import runDatumTextJS      :: forall f. NativeSelection           -> f -> Unit
+exports.runDatumTextJS = selection => f => selection.text(f)
 
 //           SELECTION functions
 // :: String -> NativeSelection

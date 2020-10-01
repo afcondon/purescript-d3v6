@@ -7,13 +7,15 @@ module D3.Base (
   , Attr(..), TickMap, DragBehavior(..)
   , Selection(..) -- only exported here to build interpreter, will be hidden when code tidied up
   , Element(..), noUpdate, noExit, emptySelection
-  , Force(..), ForceType(..), Link, Node, IdFn, ID, Label
+  , Force(..), ForceType(..), Link, Node, IdFn, ID, Label, LineJoin(..)
   , Simulation(..), SimulationRecord, SimulationConfig, defaultConfigSimulation, SimulationNodeRow
+  , noChildren, noAttrs, radialLink, transform, TransformFn, fontFamily, fontSize, strokeLineJoin
   , strokeColor, strokeColor_D, strokeWidth, strokeWidth_D, strokeOpacity, strokeOpacity_D, radius, radius_D, fill, fill_D, viewBox
 ) where
 
 import Prelude
 
+import Data.Foldable (intercalate)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 
@@ -161,8 +163,16 @@ data Attr =
   | StringAttrI      String (Datum -> Number -> String)
   | NumberAttrI      String (Datum -> Number -> Number)
   | ArrayNumberAttrI String (Datum -> Number -> Array Number)
-
+-- Text in D3 is not an attribute but syntactically and semantically it really is
+-- so in our DSL we will just make it one and hide that fact
+  | TextAttr        (Datum -> String)
 -- prettier definitions for attributes
+noAttrs :: Array Attr
+noAttrs = []
+
+noChildren :: forall a. Array (Selection a)
+noChildren = []
+
 strokeColor :: String -> Attr
 strokeColor = StaticString "stroke"
 
@@ -195,8 +205,33 @@ fill_D = StringAttr "fill"
 
 viewBox :: Number -> Number -> Number -> Number -> Attr
 viewBox xo yo width height = StaticArrayNumber "viewBox" [ xo, yo, width, height ]
-  
 
+fontFamily :: String -> Attr
+fontFamily = StaticString "font-family"
+  
+fontSize :: Number -> Attr
+fontSize = StaticNumber "font-size"
+
+data LineJoin = Arcs | Bevel | Miter | MiterClip | Round
+instance showLineJoin :: Show LineJoin where
+  show Arcs = "arcs"
+  show Bevel = "bevel"
+  show Miter = "miter"
+  show MiterClip = "miter-clip"
+  show Round = "round"
+
+strokeLineJoin :: LineJoin -> Attr
+strokeLineJoin linejoin = StaticString "stroke-linejoin" $ show linejoin
+    
+foreign import d3LinkRadial :: (Datum -> Number) -> (Datum -> Number) -> (Datum -> String)
+radialLink :: (Datum -> Number) -> (Datum -> Number) -> Attr
+radialLink angleFn radiusFn = StringAttr "d" $ d3LinkRadial angleFn radiusFn
+
+type TransformFn = Datum -> String
+transform :: Array TransformFn -> Attr
+transform fs = StringAttr "transform" (\d -> showTransform d)
+  where
+    showTransform d = intercalate " " $ flap fs d
 
 -- |              Show instance etc
 
@@ -226,6 +261,7 @@ instance showAttribute :: Show Attr where
   show (StaticNumber a v) = "\n.attr(\"" <> a <> "\", \"" <> show v <> "\")"
   show (StaticArrayNumber a v) = "\n.attr(\"" <> a <> "\", \"" <> show v <> "\")"
   show (StringAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
+  show (TextAttr fn) = "\n.attr(\"" <> "Text" <> "\", <\\d -> result>)"
   show (NumberAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
   show (ArrayNumberAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
   show (StringAttrI a fn) = "\n.attr(\"" <> a <> "\", <\\d i -> result>)"

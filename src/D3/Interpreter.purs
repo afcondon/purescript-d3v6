@@ -26,6 +26,7 @@ foreign import data NativeJS       ::           Type
 -- all this FFI stuff can be made Effect Unit later 
 foreign import runSimpleAttrJS     ::           NativeSelection -> String -> NativeJS -> Unit
 foreign import runDatumAttrJS      :: forall f. NativeSelection -> String -> f -> Unit
+foreign import runDatumTextJS      :: forall f. NativeSelection           -> f -> Unit
 foreign import runDatumIndexAttrJS :: forall f. NativeSelection -> String -> f -> Unit
 foreign import d3SelectAllJS       ::           String -> NativeSelection
 foreign import d3AppendElementJS   ::           NativeSelection -> String -> NativeSelection
@@ -213,6 +214,8 @@ applyAttr selection = case _ of
     (StringAttrI attr fnDI)        -> pure $ runDatumIndexAttrJS selection attr fnDI
     (NumberAttrI attr fnDI)        -> pure $ runDatumIndexAttrJS selection attr fnDI
     (ArrayNumberAttrI attr fnDI)   -> pure $ runDatumIndexAttrJS selection attr fnDI
+
+    (TextAttr fnD)                 -> pure $ runDatumTextJS selection fnD
 
 stringToNativeJS :: String -> NativeJS
 stringToNativeJS = unsafeCoerce

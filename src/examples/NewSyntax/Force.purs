@@ -10,9 +10,8 @@ import D3.Base
 import Affjax (Error)
 import Data.Array (singleton)
 import Data.Either (Either(..))
-import Data.Map (Map, fromFoldable)
+import Data.Map (fromFoldable)
 import Data.Tuple (Tuple(..))
-import Debug.Trace (spy)
 import Math (sqrt)
 import Prelude (const, identity, unit, ($), (/))
 import Unsafe.Coerce (unsafeCoerce)
@@ -73,16 +72,16 @@ d3Node = unsafeCoerce
 
 chart :: Tuple Number Number -> Selection Model
 chart (Tuple width height) = 
-  initialSelect "div#force" "forceLayout" [] $ [
+  initialSelect "div#force" "forceLayout" noAttrs $ [
     appendNamed "svg" Svg [ viewBox 0.0 0.0 width height ] [
       append Group [ strokeColor "#999", strokeOpacity 0.6 ] 
         [ join Line modelLinks
-          (appendNamed "link" Line [ strokeWidth_D (\d -> sqrt (d3Link d).value)] [])
+          (appendNamed "link" Line [ strokeWidth_D (\d -> sqrt (d3Link d).value)] noChildren)
           noUpdate noExit ]
         
       , append Group [ strokeColor "#fff", strokeOpacity 1.5 ]
         [ join Circle modelNodes
-          (appendNamed "node" Circle [ radius 5.0, fill_D colorByGroup] [])
+          (appendNamed "node" Circle [ radius 5.0, fill_D colorByGroup] noChildren)
           noUpdate noExit ]
       ]
   ]
@@ -100,7 +99,7 @@ modelNodes model = unsafeCoerce model.nodes
 -- another version of the 'chart' above, showing how Selections can be composed
 chartComposed :: Tuple Number Number -> Selection Model
 chartComposed (Tuple width height) = 
-  initialSelect "div#force" "forceLayout" [] $ singleton $ 
+  initialSelect "div#force" "forceLayout" noAttrs $ singleton $ 
     appendNamed "svg" Svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
       append Group
         [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
@@ -116,12 +115,12 @@ chartComposed (Tuple width height) =
       ]
 
 linkEnter :: String -> Selection Model
-linkEnter label = appendNamed label Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] []
+linkEnter label = appendNamed label Line [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value)] noChildren
 
 -- TODO note that we are not saying (\d i -> scale d.group) because contents of foreign data Datum
 -- cannot be visible here, some kind of ugly coerce in the scale function, or using FFI may be required
 nodeEnter :: String -> Selection Model
-nodeEnter label = appendNamed label Circle [ StaticNumber "r" 5.0, StringAttr "fill" colorByGroup] []
+nodeEnter label = appendNamed label Circle [ StaticNumber "r" 5.0, StringAttr "fill" colorByGroup] noChildren
 
 -- | function to build the tick function, quite tricky
 myTickMap :: TickMap Model
