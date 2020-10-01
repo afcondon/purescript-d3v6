@@ -61,4 +61,11 @@ chart (Tuple width height) =
       .attr("fill", d => scale(d.group))
 ```
 
+# Quickstart to run an example
+
+Note that this is for a different example than the above, and assumes you already have `purescript` and `spago` installed.
+```
+npm i
+npm run example
+```
 
