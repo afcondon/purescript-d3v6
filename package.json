@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "http-server": "^0.12.3"
+  },
+  "scripts": {
+    "bundle": "spago bundle-app -t dist/bundle.js",
+    "serve": "http-server dist -a localhost --port 1234 -o",
+    "example": "npm run bundle; npm run serve"
+  }
+}
