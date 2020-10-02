@@ -1,38 +1,40 @@
 module NewSyntax.Tree (
-    Model, makeModel, Tree(..) -- no constructor
+    Model, Tree(..) -- NB no constructor
+  , chart
+  , readModelFromFileContents -- read the tree structure
+  , makeModel -- post process tree structure such that it can be used to render using chart
 ) where
 
 import D3.Base
 
 import Affjax (Error)
-import Data.Array (singleton)
 import Data.Either (Either(..))
-import Data.Map (fromFoldable)
+import Data.Int (toNumber)
 import Data.Tuple (Tuple(..))
-import Math (pi, sqrt)
+import Math (pi)
+import Prelude (negate, show, ($), (*), (-), (/), (<), (<>), (==), (>=))
 import Unsafe.Coerce (unsafeCoerce)
-import Prelude (const, identity, negate, show, (*), (/), (-), (>=), (==), (<), unit, (<>), ($), (/))
 
 data Tree a = Node a (Array (Tree a))
 -- this probably belongs in d3 base?
 type TreeConfig a = {
-    width      :: Int
-  , height     :: Int
-  , separation :: Tree a -> Tree a -> Int
+    size       :: Array Number
+  , separation :: Datum -> Datum -> Int
 }
+
+chartTreeConfig :: Number -> TreeConfig String
+chartTreeConfig width = 
+  { size: [2.0 * pi, width / 2.0]
+  , separation: radialSeparationJS
+  }
+
+foreign import radialSeparationJS :: Datum -> Datum -> Int
 
 -- this is the model that this particular "chart" / simulation uses
 data Model a = Model {
       tree :: Tree a
     , d3Tree :: D3Tree
     , config :: TreeConfig a
-}
-
-makeModel :: forall a. TreeConfig a -> Tree a -> Model a
-makeModel config tree = Model {
-    tree
-  , d3Tree: d3Hierarchy tree
-  , config
 }
 
 -- this is an opaque type behind which hides the data type of the Purescript tree that was converted
@@ -43,22 +45,30 @@ foreign import data RecursiveD3TreeNode :: Type
 foreign import data D3Tree :: Type
 type D3TreeNode = {
     "data" :: ModelData -- guaranteed coercible to the `a` of the `Model a`
-  , x :: Number
-  , y :: Number
-  , name :: String
-  , value :: String
-  , depth :: Number
-  , height :: Number
+  , x        :: Number
+  , y        :: Number
+  , name     :: String
+  , value    :: String
+  , depth    :: Number
+  , height   :: Number
 -- these next too are guaranteed coercible to the same type, ie D3TreeNode
-  , parent :: RecursiveD3TreeNode -- this won't be present in the root node
+-- BUT ONLY IF the D3Tree is a successful conversion using d3Hierarchy
+-- TODO code out exceptions
+  , parent   :: RecursiveD3TreeNode -- this won't be present in the root node
   , children :: Array RecursiveD3TreeNode -- this won't be present in leaf nodes
 }
 
 -- do the decode on the Purescript side unless files are ginormous, this is just for prototyping
-foreign import readJSONJS :: forall a. String -> Tree String-- TODO no error handling at all here RN
+foreign import readJSONJS :: forall a. a -> Tree a-- TODO no error handling at all here RN
 foreign import d3Hierarchy :: forall a. Tree a -> D3Tree
 foreign import hasChildren :: Datum -> Boolean
 
+makeModel :: Tuple Number Number -> Tree String -> Model String
+makeModel (Tuple width _) tree = Model { tree, d3Tree, config }
+  where 
+    d3Tree = d3Hierarchy tree
+    config = chartTreeConfig width
+  
 readModelFromFileContents :: forall r. Either Error { body ∷ String | r } -> Tree String
 readModelFromFileContents (Right { body } ) = readJSONJS body
 readModelFromFileContents (Left err)        = Node "error reading tree" []

@@ -20,3 +20,5 @@ exports.d3Hierarchy = tree => d3.d3Hierarchy(tree)
 
 // foreign import hasChildren :: Datum -> Boolean
 exports.hasChildren = d => typeof d.children != 'undefined'
+
+exports.radialSeparationJS = a => b => (a.parent == b.parent ? 1 : 2) / a.depth

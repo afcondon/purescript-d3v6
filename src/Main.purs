@@ -24,13 +24,14 @@ getWindowWidthHeight = do
   height <- innerHeight win
   pure $ Tuple (toNumber width) (toNumber height)
 
-interpreter :: Selection Force.Model -> StateT (D3State Force.Model) Effect Unit
-interpreter forceChart = do
+forceInterpreter :: Selection Force.Model -> StateT (D3State Force.Model) Effect Unit
+forceInterpreter forceChart = do
   simulation <- interpretSimulation Force.simulation Force.getNodes Force.getLinks Force.makeModel
   interpretSelection forceChart
   interpretTickMap simulation Force.myTickMap
   interpretDrag Force.myDrag
   startSimulation simulation
+
 
 main :: Effect Unit
 main = launchAff_ do -- Aff 
@@ -38,11 +39,11 @@ main = launchAff_ do -- Aff
   forceJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/miserables.json"
   let forceChart = Force.chart widthHeight
   let fileData   = Force.readModelFromFileContents forceJSON
-  let model      = Force.makeModel fileData.links fileData.nodes
-  liftEffect $ runStateT (interpreter forceChart) (Context model initialScope)
+  let forceModel = Force.makeModel fileData.links fileData.nodes
+  _ <- liftEffect $ runStateT (forceInterpreter forceChart) (Context forceModel initialScope)
 
-  -- treeJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/flare-2.json"
-  -- let treeChart = Tree.chart widthHeight
-  -- let fileData  = Tree.readModelFromFileContents treeJSON
-  -- let model     = Tree.makeModel fileData.links fileData.nodes
-  -- liftEffect $ runStateT (interpreter treeChart) (Context model initialScope)
+  treeJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/flare-2.json"
+  let treeChart = Tree.chart widthHeight
+  let treeData  = Tree.readModelFromFileContents treeJSON
+  let treeModel = Tree.makeModel widthHeight treeData 
+  liftEffect $ runStateT (interpretSelection treeChart) (Context treeModel initialScope)
