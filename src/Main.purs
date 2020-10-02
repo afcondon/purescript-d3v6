@@ -19,6 +19,7 @@ import NewSyntax.Force as Force
 import NewSyntax.Tree as Tree
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
+import D3.Example.Tree as Wrapped
 
 getWindowWidthHeight :: Effect (Tuple Number Number)
 getWindowWidthHeight = do
@@ -39,13 +40,14 @@ forceInterpreter forceChart = do
 main :: Effect Unit
 main = launchAff_ do -- Aff 
   widthHeight    <- liftEffect getWindowWidthHeight
-  forceJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/miserables.json"
-  let forceChart = Force.chart widthHeight
-  let fileData   = Force.readModelFromFileContents forceJSON
-  let forceModel = Force.makeModel fileData.links fileData.nodes
-  _ <- liftEffect $ runStateT (forceInterpreter forceChart) (Context forceModel initialScope)
+  -- forceJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/miserables.json"
+  -- let forceChart = Force.chart widthHeight
+  -- let fileData   = Force.readModelFromFileContents forceJSON
+  -- let forceModel = Force.makeModel fileData.links fileData.nodes
+  -- _ <- liftEffect $ runStateT (forceInterpreter forceChart) (Context forceModel initialScope)
 
   treeJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/flare-2.json"
+  -- let _ = Wrapped.chart widthHeight treeJSON
   let treeChart = Tree.chart widthHeight
   case Tree.readModelFromFileContents widthHeight treeJSON of
     (Left error) -> liftEffect $ log $ printError error

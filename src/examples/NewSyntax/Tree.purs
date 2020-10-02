@@ -10,6 +10,7 @@ import D3.Base
 import Affjax (Error)
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..))
+import Debug.Trace (spy)
 import Math (pi)
 import Prelude (negate, show, ($), (*), (-), (/), (<), (<>), (==), (>=))
 import Unsafe.Coerce (unsafeCoerce)
@@ -146,7 +147,7 @@ foreign import d3HierarchyLinks :: D3Tree -> SubModel
 foreign import d3HierarchyDescendants :: D3Tree -> SubModel
 
 modelLinks :: forall a. Model a -> SubModel
-modelLinks (Model model) = d3HierarchyLinks model.d3Tree
+modelLinks (Model model) = spy "projecting links submodel out of data" d3HierarchyLinks model.d3Tree
 
 modelDescendants :: forall a. Model a -> SubModel
 modelDescendants (Model model) = d3HierarchyDescendants model.d3Tree
