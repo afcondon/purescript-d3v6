@@ -90,7 +90,9 @@ chart (Tuple width height) =
     -- three little transform functions to build up the transforms on nodes and labels
     rotate x = show $ (x * 180.0 / pi - 90.0)
     rotateCommon d = "rotate(" <> rotate (d3TreeNode d).x <> ")"
-    rotateText2 d = "rotate(" <> if (d3TreeNode d).x >= pi then "180" else "0" <> ")"
+    rotateText2 d = "rotate(" <> if (d3TreeNode d).x >= pi 
+                                 then "180" <> ")" 
+                                 else "0" <> ")"
     -- same translation for both text and node
     translate d = "translate(" <> show (d3TreeNode d).y <> ",0)"
   in
@@ -120,7 +122,7 @@ chart (Tuple width height) =
                                      , StaticString "dy" "0.31em"
                                      , NumberAttr "x" labelOffset
                                      , StringAttr "text-anchor" textOffset
-                                     , TextAttr (\d -> (d3TreeNode d).name) 
+                                     , TextAttr (\d -> (d3TreeNode d).data.name) 
                                      -- TODO add clone step later 
                                      ] noChildren)
             noUpdate noExit ]

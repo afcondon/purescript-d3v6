@@ -180,10 +180,10 @@ strokeColor_D :: (Datum -> String) -> Attr
 strokeColor_D = StringAttr "stroke"
 
 strokeWidth :: Number -> Attr
-strokeWidth = StaticNumber "stroke"
+strokeWidth = StaticNumber "stroke-width"
 
 strokeWidth_D :: (Datum -> Number) -> Attr
-strokeWidth_D = NumberAttr "stroke"
+strokeWidth_D = NumberAttr "stroke-width"
   
 strokeOpacity :: Number -> Attr
 strokeOpacity = StaticNumber "stroke-opacity"
