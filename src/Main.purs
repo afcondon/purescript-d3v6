@@ -1,19 +1,22 @@
 module Main where
 
 import Prelude
-import NewSyntax.Force as Force
-import NewSyntax.Tree as Tree
 
 import Affjax (get) as AJAX
+import Affjax (printError)
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.State (StateT, runStateT)
 import D3.Base (Selection)
 import D3.Interpreter (D3State(..), initialScope, interpretSelection, interpretSimulation, interpretTickMap, interpretDrag, startSimulation)
+import Data.Either (Either(..))
 import Data.Int (toNumber)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
+import NewSyntax.Force as Force
+import NewSyntax.Tree as Tree
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
 
@@ -44,6 +47,7 @@ main = launchAff_ do -- Aff
 
   treeJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/flare-2.json"
   let treeChart = Tree.chart widthHeight
-  let treeData  = Tree.readModelFromFileContents treeJSON
-  let treeModel = Tree.makeModel widthHeight treeData 
-  liftEffect $ runStateT (interpretSelection treeChart) (Context treeModel initialScope)
+  case Tree.readModelFromFileContents widthHeight treeJSON of
+    (Left error) -> liftEffect $ log $ printError error
+    (Right treeModel) -> liftEffect $ 
+                         runStateT (interpretSelection treeChart) (Context treeModel initialScope) *> pure unit

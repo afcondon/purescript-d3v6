@@ -4,19 +4,20 @@ exports.readJSONJS = filecontents => decodeFile(filecontents)
 
 const decodeFile = function (filecontents) {
   const json = JSON.parse(filecontents)
-  const links = json.links.map(d => Object.create(d))
-  const nodes = json.nodes.map(d => Object.create(d))
-  return { links: links, nodes: nodes }
+  return json
 }
 
 // foreign import d3HierarchyLinks :: D3Tree -> SubModel
 exports.d3HierarchyLinks = tree => tree.links()
 
-// foreign import d3HierarchyDescendents :: D3Tree -> SubModel
-exports.d3HierarchyDescendents = tree => tree.descendents()
+// foreign import d3HierarchyDescendants :: D3Tree -> SubModel
+exports.d3HierarchyDescendants = tree => tree.descendants()
 
-// foreign import d3Hierarchy :: forall a. Tree a -> D3Tree
-exports.d3Hierarchy = tree => d3.d3Hierarchy(tree)
+// foreign import d3Hierarchy :: forall a. Tree a -> D3Hierarchical
+exports.d3Hierarchy = tree => d3.hierarchy(tree)
+
+// foreign import d3Hierarchy :: forall a. D3Hierarchical -> D3Tree
+exports.d3InitTree = config => hierarchy => d3.tree().size(config.size).separation(config.separation)(hierarchy)
 
 // foreign import hasChildren :: Datum -> Boolean
 exports.hasChildren = d => typeof d.children != 'undefined'

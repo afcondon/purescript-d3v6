@@ -6,4 +6,4 @@
 const d3SchemeCategory10 = d3.scaleOrdinal(d3.schemeCategory10)
 exports.d3SchemeCategory10JS = value => d3SchemeCategory10(value)
 
-exports.d3LinkRadial = angleFn => radiusFn => d3.d3LinkRadial().angle(angle).radius(radius)
+exports.d3LinkRadial = angleFn => radiusFn => d3.linkRadial().angle(angleFn).radius(radiusFn)

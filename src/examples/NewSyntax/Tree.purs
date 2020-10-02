@@ -1,5 +1,5 @@
 module NewSyntax.Tree (
-    Model, Tree(..) -- NB no constructor
+    Model, Tree(..), TreeJson -- NB no constructor
   , chart
   , readModelFromFileContents -- read the tree structure
   , makeModel -- post process tree structure such that it can be used to render using chart
@@ -9,7 +9,6 @@ import D3.Base
 
 import Affjax (Error)
 import Data.Either (Either(..))
-import Data.Int (toNumber)
 import Data.Tuple (Tuple(..))
 import Math (pi)
 import Prelude (negate, show, ($), (*), (-), (/), (<), (<>), (==), (>=))
@@ -32,7 +31,7 @@ foreign import radialSeparationJS :: Datum -> Datum -> Int
 
 -- this is the model that this particular "chart" / simulation uses
 data Model a = Model {
-      tree :: Tree a
+      json :: TreeJson
     , d3Tree :: D3Tree
     , config :: TreeConfig a
 }
@@ -43,6 +42,8 @@ foreign import data RecursiveD3TreeNode :: Type
 -- this is the Purescript Tree after processing in JS to remove empty child fields from leaves etc
 -- need to ensure that this structure is encapsulated in libraries (ie by moving this code)
 foreign import data D3Tree :: Type
+foreign import data D3Hierarchical :: Type
+foreign import data TreeJson :: Type
 type D3TreeNode = {
     "data" :: ModelData -- guaranteed coercible to the `a` of the `Model a`
   , x        :: Number
@@ -59,19 +60,21 @@ type D3TreeNode = {
 }
 
 -- do the decode on the Purescript side unless files are ginormous, this is just for prototyping
-foreign import readJSONJS :: forall a. a -> Tree a-- TODO no error handling at all here RN
-foreign import d3Hierarchy :: forall a. Tree a -> D3Tree
+foreign import readJSONJS :: String -> TreeJson -- TODO no error handling at all here RN
+foreign import d3Hierarchy :: TreeJson -> D3Hierarchical
+foreign import d3InitTree :: forall a. TreeConfig a -> D3Hierarchical -> D3Tree 
 foreign import hasChildren :: Datum -> Boolean
 
-makeModel :: Tuple Number Number -> Tree String -> Model String
-makeModel (Tuple width _) tree = Model { tree, d3Tree, config }
-  where 
-    d3Tree = d3Hierarchy tree
-    config = chartTreeConfig width
+makeModel :: Number -> TreeJson -> Model String
+makeModel width json = Model { json, d3Tree, config }
+  where
+    config           = chartTreeConfig width
+    hierarchicalData = d3Hierarchy json
+    d3Tree           = d3InitTree config hierarchicalData
   
-readModelFromFileContents :: forall r. Either Error { body ∷ String | r } -> Tree String
-readModelFromFileContents (Right { body } ) = readJSONJS body
-readModelFromFileContents (Left err)        = Node "error reading tree" []
+readModelFromFileContents :: forall r. Tuple Number Number -> Either Error { body ∷ String | r } -> Either Error (Model String)
+readModelFromFileContents (Tuple width _) (Right { body } ) = Right $ makeModel width (readJSONJS body)
+readModelFromFileContents _               (Left error)      = Left error
 
 -- we give the chart our Model type but behind the scenes it is mutated by D3 and additionally
 -- which projection of the "Model" is active in each Join varies so we can't have both strong
@@ -102,7 +105,7 @@ chart (Tuple width height) =
             noUpdate noExit ]
           
         , append Group noAttrs
-          [ join Circle modelDescendents
+          [ join Circle modelDescendants
             (appendNamed "node" Circle [ radius 2.5
                                        , fill_D (\d -> if hasChildren d then "#555" else "#999")
                                        , transform [ rotateCommon, translate ] ] noChildren)
@@ -111,7 +114,7 @@ chart (Tuple width height) =
                        , fontSize 10.0
                        , strokeLineJoin Round
                        , strokeWidth 3.0]
-          [ join Text modelDescendents
+          [ join Text modelDescendants
             (appendNamed "text" Text [ transform [ rotateCommon, translate, rotateText2]
                                      , StaticString "dy" "0.31em"
                                      , NumberAttr "x" labelOffset
@@ -140,11 +143,11 @@ textOffset d =
 
 -- Projection functions to get subModels out of the Model for sub-selections
 foreign import d3HierarchyLinks :: D3Tree -> SubModel
-foreign import d3HierarchyDescendents :: D3Tree -> SubModel
+foreign import d3HierarchyDescendants :: D3Tree -> SubModel
 
 modelLinks :: forall a. Model a -> SubModel
 modelLinks (Model model) = d3HierarchyLinks model.d3Tree
 
-modelDescendents :: forall a. Model a -> SubModel
-modelDescendents (Model model) = d3HierarchyDescendents model.d3Tree
+modelDescendants :: forall a. Model a -> SubModel
+modelDescendants (Model model) = d3HierarchyDescendants model.d3Tree
 

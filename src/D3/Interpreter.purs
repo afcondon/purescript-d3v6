@@ -182,7 +182,7 @@ go activeSelection selection = do
 
     (Join r) -> do
           (Context model scope) <- get
-          let joinSelection = d3JoinJS activeSelection (show r.element) (r.projection model)
+          let joinSelection = d3JoinJS activeSelection (show r.element) (spy "submodel" $ r.projection model)
           enterSelection  <- go joinSelection r.enter
           -- updateSelection <- go joinSelection r.update
           -- exitSelection   <- go joinSelection r.exit

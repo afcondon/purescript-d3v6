@@ -42,12 +42,12 @@
             enter 'path' [props] -- one prop, 'd' is d3.linkRadial().angle(d=>d.x).radius(d=>d.y)
       , append 'g' for circles
           selectAll `circle`
-          data bind root.descendents()
+          data bind root.descendants()
           join
             enter 'circle' props -- one prop, 'transform' is printf-ish thing
       , append 'g' for text
           selectAll `text`
-          data bind root.descendents()
+          data bind root.descendants()
           join
             enter 'text' [props] -- one prop, 'transform' is printf-ish thing
           clone(true).lower() [props] -- clones whole text selection, lowers it, white outline
