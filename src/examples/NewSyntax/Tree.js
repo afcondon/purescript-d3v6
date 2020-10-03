@@ -15,7 +15,9 @@ exports.d3Hierarchy = json => d3.hierarchy(json).sort((a, b) => d3.ascending(a.d
 exports.d3InitTree = config => hierarchy => d3.tree().size(config.size).separation(config.separation)(hierarchy)
 
 // foreign import hasChildren :: Datum -> Boolean
-exports.hasChildren = d => typeof d.children != 'undefined'
+exports.hasChildren = function(d) {
+  return !d.children
+}
 
 // this REQUIRES that the data have been passed thru the d3.herarchy (and maybe d3.tree?) function
 // NB because this is called directly from deep in the bowels of D3 (tree first walk to be precise) it isn't a curried function
