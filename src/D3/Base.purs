@@ -1,5 +1,5 @@
 module D3.Base (
-    initialSelect, append, appendNamed, join, transition, transitionNamed
+    initialSelect, append, appendNamed, join, transition, transitionNamed, extendSelection
 -- foreign (opaque) types for D3 things that are only needed as references on PureScript side
   , Datum, SubModel, NativeSelection, Scale
 -- foreign functions exported by Base
@@ -15,6 +15,7 @@ module D3.Base (
 
 import Prelude
 
+import Data.Array (singleton)
 import Data.Foldable (intercalate)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
@@ -124,6 +125,17 @@ initialSelect selector label attributes children =
 append :: forall model. Element -> Array Attr -> Array (Selection model) -> Selection model 
 append element attributes children = 
   Append { label: Nothing, element, attributes, children }
+
+-- add a Selection to the children field of another selection
+extendSelection :: forall model. Selection model -> Selection model -> Selection model
+extendSelection a b = 
+  case a of
+    (Append a) -> Append a { children = singleton b <> a.children}
+    otherwise -> a -- TODO for now we'll just do nothing in other cases
+    -- (InitialSelect i)
+    -- (Join j)
+    -- (Transition _)
+    -- NullSelection
 
 appendNamed :: forall model. Label -> Element -> Array Attr -> Array (Selection model) -> Selection model 
 appendNamed label element attributes children = 
