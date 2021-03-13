@@ -29,15 +29,17 @@ chartInit (Tuple width height) =
   let
     origin = { x: -width / 2.0, y: -height / 2.0 }
   in
-    nameSelection "General Update Pattern" $ selectInDOM "div#GUP"  noAttributes [
-        nameSelection "svg" $ svg_ [ viewBox origin.x origin.y width height ]
-    ]
+    nameSelection "General Update Pattern" $ 
+      selectInDOM "div#GUP"
+        []
+        [ nameSelection "svg" $ svg_ [ viewBox origin.x origin.y width height ]
+        ]
 
 chartUpdate :: NativeSelection -> Model Char -> Selection (Model Char) 
 chartUpdate svg letters =
     extendSelection (unsafeCoerce svg) $ -- TODO temporary hack to type check / take stock of state of code
         join Text identity' {
-            enter:  text_ [ fill "green" , StaticNumber "y" (-30.0), TextAttr (\d -> singleton (d3DOMelement d).data )]
+            enter:  text_ [ fill "green", StaticNumber "y" (-30.0), computeText (\d -> singleton (d3DOMelement d).data )]
           , update: text_ [ fill "black", StaticNumber "y" 0.0 ]
           , exit:   text_ [ fill "brown", StaticNumber "y" 30.0 ]
         }

@@ -101,7 +101,7 @@ interpretForce simulation = do
     (Force label ForceMany)                 -> pure $ forceManyJS simulation label 
     (Force label (ForceCenter cx cy))       -> pure $ forceCenterJS simulation label cx cy
     -- (Force (ForceLink links idFn)) -> pure $ forceLinks
-    (Force label (ForceCollide radius))     -> pure $ forceCollideJS simulation label radius
+    (Force label (ForceCollide radius_))     -> pure $ forceCollideJS simulation label radius_
     (Force label (ForceX x))                -> pure $ forceXJS simulation label x
     (Force label (ForceY y))                -> pure $ forceYJS simulation label y
     (Force label (ForceRadial cx cy))       -> pure $ forceRadialJS simulation label cx cy

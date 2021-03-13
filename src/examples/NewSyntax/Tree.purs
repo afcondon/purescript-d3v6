@@ -106,38 +106,38 @@ chart (Tuple width height) =
         nameSelection "svg" $
           svg [ viewBox origin.x origin.y width height ] [
             group [] 
-              [ simpleJoin Path modelLinks $ 
+              [ Path <-> modelLinks $ 
                   nameSelection "link" $
                     path_ [ strokeWidth 1.5
-                                  , strokeColor "#555"
-                                  , strokeOpacity 0.4
-                                  , fill "none"
-                                  , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
-                                ]
+                          , strokeColor "#555"
+                          , strokeOpacity 0.4
+                          , fill "none"
+                          , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
+                          ]
               ]
               
           , group []
-            [ simpleJoin Circle modelDescendants $
+            [ Circle <-> modelDescendants $
                 nameSelection "node" $
                   circle_ [ radius 2.5
-                                  , fill_D (\d -> if hasChildren d then "#555" else "#999")
-                                  , transform [ rotateCommon, translate 
-                                ] ]
+                          , computeFill (\d -> if hasChildren d then "#555" else "#999")
+                          , transform [ rotateCommon, translate ]
+                          ]
             ]
           , group 
               [ fontFamily "sans-serif"
               , fontSize 10.0
               , strokeLineJoin Round
               , strokeWidth 3.0 ]
-              [ simpleJoin Text modelDescendants $
+              [ Text <-> modelDescendants $
                   nameSelection "text" $
                     text_ [ transform [ rotateCommon, translate, rotateText2]
-                                  , StaticString "dy" "0.31em"
-                                  , NumberAttr "x" labelOffset
-                                  , StringAttr "text-anchor" textOffset
-                                  , TextAttr (\d -> (d3TreeNode d).data.name) 
-                                  -- TODO add clone step later 
-                                  ]
+                          , dy "0.31em" -- TODO should be number and unit
+                          , computeX labelOffset
+                          , computeTextAnchor textOffset
+                          , computeText (\d -> (d3TreeNode d).data.name) 
+                          -- TODO add clone step later 
+                          ]
               ]
           ]
       ]

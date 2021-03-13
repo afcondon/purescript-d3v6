@@ -8,7 +8,6 @@ module NewSyntax.Force (
 import D3.Base
 
 import Affjax (Error)
-import Data.Array (singleton)
 import Data.Either (Either(..))
 import Data.Map (fromFoldable)
 import Data.Tuple (Tuple(..))
@@ -32,20 +31,24 @@ type D3GraphLink = { id :: ID, source :: GraphNode, target :: GraphNode, value :
 chart :: Tuple Number Number -> Selection Model
 chart (Tuple width height) = 
   nameSelection "forceLayout" $
-    selectInDOM "div#force" noAttributes $ [
+    selectInDOM "div#force" [] [
       nameSelection "svg" $
         svg [ viewBox 0.0 0.0 width height ] [
-        group [ strokeColor "#999", strokeOpacity 0.6 ] 
-          [ simpleJoin Line modelLinks $  -- "link" Selection used by name in tick function
+        group 
+          [ strokeColor "#999"
+          , strokeOpacity 0.6 ] 
+          [ Line <-> modelLinks $  -- "link" Selection used by name in tick function
               nameSelection "link" $
-                line_ [ strokeWidth_D (\d -> sqrt (d3Link d).value) ]
+                line_ [ computeStrokeWidth (\d -> sqrt (d3Link d).value) ]
           ]
           
-        , group [ strokeColor "#fff", strokeOpacity 1.5 ]
-          [ simpleJoin Circle modelNodes $ -- "node" Selection used by name in tick function
-            nameSelection "node" $
-              circle_ [ radius 5.0, fill_D colorByGroup]
-          ]
+        , group 
+            [ strokeColor "#fff"
+            , strokeOpacity 1.5 ]
+            [ Circle <-> modelNodes $ 
+              nameSelection "node" $ -- "node" Selection used by name in tick function
+                circle_ [ radius 5.0, computeFill colorByGroup]
+            ]
         ]
     ]
 
@@ -54,28 +57,34 @@ chart (Tuple width height) =
 chartComposed :: Tuple Number Number -> Selection Model
 chartComposed (Tuple width height) = 
   nameSelection "forceLayout" $
-    selectInDOM "div#force" noAttributes [
-      nameSelection "svg" $
-        svg [ StaticArrayNumber "viewBox" [0.0,0.0,width,height] ] [
-          group
-            [ StaticString "stroke" "#999", StaticNumber "stroke-opacity" 0.6 ] 
-            [ simpleJoin Line modelLinks $ linkEnter "link" ] -- "link" Selection used by name in tick function
-          
-        , group
-            [ StaticString "stroke" "#ff", StaticNumber "stroke-opacity" 1.5 ]
-            [ simpleJoin Circle modelNodes $ nodeEnter "node" ] -- "node" Selection used by name in tick function
-        ]
-    ]
+    selectInDOM "div#force" 
+      [] 
+      [ nameSelection "svg" $
+          svg 
+            [ viewBox 0.0 0.0 width height ] 
+            [ group
+              [ strokeColor "#999"
+              , strokeOpacity 0.6 ] 
+              
+              [ Line <-> modelLinks $ linkEnter "link" ] -- "link" Selection used by name in tick function
+            
+            , group
+                [ strokeColor "#fff"
+                , strokeOpacity 1.5 ]
+
+                [ Circle <-> modelNodes $ nodeEnter "node" ] -- "node" Selection used by name in tick function
+            ]
+      ]
 
 linkEnter :: String -> Selection Model
 linkEnter label = 
   nameSelection label $
-    line_ [ NumberAttr "stroke-width" (\d -> sqrt (d3Link d).value) ]
+    line_ [ computeStrokeWidth (\d -> sqrt (d3Link d).value) ]
 
 nodeEnter :: String -> Selection Model
 nodeEnter label = 
   nameSelection label $
-    circle_ [ StaticNumber "r" 5.0, StringAttr "fill" colorByGroup ]
+    circle_ [ radius 5.0, computeFill colorByGroup ]
 
 
 -- | definition of the particular Simulation that we are going to run

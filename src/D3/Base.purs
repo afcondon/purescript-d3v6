@@ -1,7 +1,10 @@
 module D3.Base (
     selectInDOM, nameSelection
   , svg, svg_, group, group_, div, div_, line, line_, circle, circle_, path, path_, text, text_
-  , join, simpleJoin, transition, extendSelection
+  , strokeColor, computeStrokeColor, strokeWidth, computeStrokeWidth, strokeOpacity, computeStrokeOpacity
+  , radius, computeRadius, fill, computeFill, viewBox, fontFamily, fontSize, computeText
+  , x, computeX, y, computeY, dx, dy, computeDX, computeDY, textAnchor, computeTextAnchor
+  , join, simpleJoin, (<-+->), (<->), transition, extendSelection
 -- foreign (opaque) types for D3 things that are only needed as references on PureScript side
   , Datum, SubModel, NativeSelection, Scale
 -- foreign functions exported by Base
@@ -11,11 +14,10 @@ module D3.Base (
   , Element(..)
   , Force(..), ForceType(..), Link, Node, IdFn, ID, Label, LineJoin(..)
   , Simulation(..), SimulationRecord, SimulationConfig, defaultConfigSimulation, SimulationNodeRow
-  , noAttributes, radialLink, transform, TransformFn, fontFamily, fontSize, strokeLineJoin
-  , strokeColor, strokeColor_D, strokeWidth, strokeWidth_D, strokeOpacity, strokeOpacity_D, radius, radius_D, fill, fill_D, viewBox
+  , radialLink, transform, TransformFn, strokeLineJoin
 ) where
 
-import Prelude
+import Prelude hiding ( join )
 
 import Data.Array (singleton)
 import Data.Foldable (intercalate)
@@ -188,7 +190,6 @@ text = append Text
 text_ :: forall model. Array Attr                            -> Selection model 
 text_ = append_ Text
 
-
 -- add a Selection to the children field of another selection
 extendSelection :: forall model. Selection model -> Selection model -> Selection model
 extendSelection a b = 
@@ -205,19 +206,25 @@ extendSelection a b =
 -- noExit         = NullSelection :: forall model. Selection model
 -- emptySelection = NullSelection :: forall model. Selection model
 
-join :: forall model. Element
-    -> (model -> SubModel) -- projection function to present only the appropriate data to this join
-    -> EnterUpdateExit model -- minimal definition requires only enter
-    -> Selection model
+join :: forall model. 
+    Element
+  -> (model -> SubModel) -- projection function to present only the appropriate data to this join
+  -> EnterUpdateExit model -- minimal definition requires only enter
+  -> Selection model
 join element projection enterUpdateExit = 
   Join { projection, element, enterUpdateExit }
 
-simpleJoin :: forall model. Element
-    -> (model -> SubModel) -- projection function to present only the appropriate data to this join
-    -> Selection model -- minimal definition requires only enter
-    -> Selection model
+infixl 1 join as <-+->
+infixl 1 simpleJoin as <->
+
+simpleJoin :: forall model. 
+      Element
+  -> (model -> SubModel) -- projection function to present only the appropriate data to this join
+  -> Selection model -- minimal definition requires only enter
+  -> Selection model
 simpleJoin element projection enter = 
   Join { projection, element, enterUpdateExit: { enter, update: NullSelection, exit: NullSelection } }
+ 
 
 transition :: forall model. Number -> Array Attr -> Selection model 
 transition duration attributes = 
@@ -240,39 +247,37 @@ data Attr =
 -- Text in D3 is not an attribute but syntactically and semantically it really is
 -- so in our DSL we will just make it one and hide that fact
   | TextAttr        (Datum -> String)
--- prettier definitions for attributes
-noAttributes :: Array Attr
-noAttributes = []
 
+-- prettier definitions for attributes
 strokeColor :: String -> Attr
 strokeColor = StaticString "stroke"
 
-strokeColor_D :: (Datum -> String) -> Attr
-strokeColor_D = StringAttr "stroke"
+computeStrokeColor :: (Datum -> String) -> Attr
+computeStrokeColor = StringAttr "stroke"
 
 strokeWidth :: Number -> Attr
 strokeWidth = StaticNumber "stroke-width"
 
-strokeWidth_D :: (Datum -> Number) -> Attr
-strokeWidth_D = NumberAttr "stroke-width"
+computeStrokeWidth :: (Datum -> Number) -> Attr
+computeStrokeWidth = NumberAttr "stroke-width"
   
 strokeOpacity :: Number -> Attr
 strokeOpacity = StaticNumber "stroke-opacity"
 
-strokeOpacity_D :: (Datum -> Number) -> Attr
-strokeOpacity_D = NumberAttr "stroke-opacity"
+computeStrokeOpacity :: (Datum -> Number) -> Attr
+computeStrokeOpacity = NumberAttr "stroke-opacity"
 
 radius :: Number -> Attr
 radius = StaticNumber "r"
 
-radius_D :: (Datum -> Number) -> Attr
-radius_D = NumberAttr "r"
+computeRadius :: (Datum -> Number) -> Attr
+computeRadius = NumberAttr "r"
 
 fill :: String -> Attr
-fill = StaticString "fill"
+fill = StaticString "fill_"
 
-fill_D :: (Datum -> String) -> Attr
-fill_D = StringAttr "fill"
+computeFill :: (Datum -> String) -> Attr
+computeFill = StringAttr "fill_"
 
 viewBox :: Number -> Number -> Number -> Number -> Attr
 viewBox xo yo width height = StaticArrayNumber "viewBox" [ xo, yo, width, height ]
@@ -282,6 +287,39 @@ fontFamily = StaticString "font-family"
   
 fontSize :: Number -> Attr
 fontSize = StaticNumber "font-size"
+
+computeText :: (Datum -> String) -> Attr
+computeText = TextAttr
+
+textAnchor :: String -> Attr
+textAnchor = StaticString "text-anchor"
+
+computeTextAnchor :: (Datum -> String) -> Attr
+computeTextAnchor = StringAttr "text-anchor"
+
+x :: Number -> Attr
+x = StaticNumber "x"
+
+computeX :: (Datum -> Number) -> Attr
+computeX = NumberAttr "x"
+
+y :: Number -> Attr
+y = StaticNumber "y"
+
+computeY :: (Datum -> Number) -> Attr
+computeY = NumberAttr "y"
+
+dx :: String -> Attr
+dx = StaticString "dx"
+
+computeDX :: (Datum -> String) -> Attr
+computeDX = StringAttr "dx"
+
+dy :: String -> Attr
+dy = StaticString "dy"
+
+computeDY :: (Datum -> String) -> Attr
+computeDY = StringAttr "dy"
 
 data LineJoin = Arcs | Bevel | Miter | MiterClip | Round
 instance showLineJoin :: Show LineJoin where
@@ -296,7 +334,7 @@ strokeLineJoin linejoin = StaticString "stroke-linejoin" $ show linejoin
     
 foreign import d3LinkRadial :: (Datum -> Number) -> (Datum -> Number) -> (Datum -> String)
 radialLink :: (Datum -> Number) -> (Datum -> Number) -> Attr
-radialLink angleFn radiusFn = StringAttr "d" $ d3LinkRadial angleFn radiusFn
+radialLink angleFn radius_Fn = StringAttr "d" $ d3LinkRadial angleFn radius_Fn
 
 type TransformFn = Datum -> String
 transform :: Array TransformFn -> Attr
