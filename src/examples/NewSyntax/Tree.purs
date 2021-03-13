@@ -18,6 +18,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- this stuff belongs eventually in the d3 base
 data Tree a = Node a (Array (Tree a))
+type TreeConfig :: forall k. k -> Type
 type TreeConfig a = {
     size       :: Array Number
   , separation :: Datum -> Datum -> Int
@@ -29,8 +30,9 @@ radialTreeConfig width =
   , separation: radialSeparationJS
   }
 
+data Model :: forall k. k -> Type
 data Model a = Model {
-      json :: TreeJson
+      json   :: TreeJson
     , d3Tree :: D3Tree
     , config :: TreeConfig a
 }
@@ -91,13 +93,16 @@ d3TreeNode = unsafeCoerce
 chart :: Tuple Number Number -> Selection (Model String)
 chart (Tuple width height) = 
   let
-    origin = { x: -width / 2.0, y: -height / 2.0 }
+    origin = { 
+        x: -width / 2.0
+      , y: -height / 2.0 
+    }
     -- three little transform functions to build up the transforms on nodes and labels
-    rotate x = show $ (x * 180.0 / pi - 90.0)
+    rotate x       = show $ (x * 180.0 / pi - 90.0)
     rotateCommon d = "rotate(" <> rotate (d3TreeNode d).x <> ")"
-    rotateText2 d = "rotate(" <> if (d3TreeNode d).x >= pi 
-                                 then "180" <> ")" 
-                                 else "0" <> ")"
+    rotateText2 d  = "rotate(" <> if (d3TreeNode d).x >= pi 
+                                  then "180" <> ")" 
+                                  else "0" <> ")"
     -- same translation for both text and node
     translate d = "translate(" <> show (d3TreeNode d).y <> ",0)"
   in
@@ -132,8 +137,8 @@ chart (Tuple width height) =
               [ Text <-> modelDescendants $
                   nameSelection "text" $
                     text_ [ transform [ rotateCommon, translate, rotateText2]
-                          , dy "0.31em" -- TODO should be number and unit
-                          , computeX labelOffset
+                          , dy 0.31 Em
+                          , computeX labelOffset Px
                           , computeTextAnchor textOffset
                           , computeText (\d -> (d3TreeNode d).data.name) 
                           -- TODO add clone step later 

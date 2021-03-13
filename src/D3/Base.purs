@@ -15,6 +15,7 @@ module D3.Base (
   , Force(..), ForceType(..), Link, Node, IdFn, ID, Label, LineJoin(..)
   , Simulation(..), SimulationRecord, SimulationConfig, defaultConfigSimulation, SimulationNodeRow
   , radialLink, transform, TransformFn, strokeLineJoin
+  , DomUnit(..)
 ) where
 
 import Prelude hiding ( join )
@@ -248,6 +249,14 @@ data Attr =
 -- so in our DSL we will just make it one and hide that fact
   | TextAttr        (Datum -> String)
 
+data DomUnit = Em | Px | Rem | Percent | NoUnit
+instance showDomUnit :: Show DomUnit where
+  show Em = "em"
+  show Px = "px"
+  show Rem = "rem"
+  show Percent = "%"
+  show NoUnit = ""
+
 -- prettier definitions for attributes
 strokeColor :: String -> Attr
 strokeColor = StaticString "stroke"
@@ -300,8 +309,8 @@ computeTextAnchor = StringAttr "text-anchor"
 x :: Number -> Attr
 x = StaticNumber "x"
 
-computeX :: (Datum -> Number) -> Attr
-computeX = NumberAttr "x"
+computeX :: (Datum -> Number) -> DomUnit -> Attr
+computeX f u = StringAttr "x" (\n -> show (f n) <> show u)
 
 y :: Number -> Attr
 y = StaticNumber "y"
@@ -315,11 +324,11 @@ dx = StaticString "dx"
 computeDX :: (Datum -> String) -> Attr
 computeDX = StringAttr "dx"
 
-dy :: String -> Attr
-dy = StaticString "dy"
+dy :: Number -> DomUnit -> Attr
+dy n u = StaticString "dy" $ show n <> show u
 
-computeDY :: (Datum -> String) -> Attr
-computeDY = StringAttr "dy"
+computeDY :: (Datum -> Number) -> DomUnit -> Attr
+computeDY f u = StringAttr "dy" (\n -> show (f n) <> show u)
 
 data LineJoin = Arcs | Bevel | Miter | MiterClip | Round
 instance showLineJoin :: Show LineJoin where
