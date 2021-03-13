@@ -1,15 +1,16 @@
 module D3.Base (
-    initialSelect, append, appendNamed, join, transition, transitionNamed, extendSelection
+    selectInDOM, append, append_, appendAs, appendAs_
+  , join, simpleJoin, transition, transitionAs, extendSelection
 -- foreign (opaque) types for D3 things that are only needed as references on PureScript side
   , Datum, SubModel, NativeSelection, Scale
 -- foreign functions exported by Base
   , d3SchemeCategory10JS
   , Attr(..), TickMap, DragBehavior(..)
-  , Selection(..) -- only exported here to build interpreter, will be hidden when code tidied up
-  , Element(..), noUpdate, noExit, emptySelection
+  , Selection(..), EnterUpdateExit -- only exported here to build interpreter, will be hidden when code tidied up
+  , Element(..)
   , Force(..), ForceType(..), Link, Node, IdFn, ID, Label, LineJoin(..)
   , Simulation(..), SimulationRecord, SimulationConfig, defaultConfigSimulation, SimulationNodeRow
-  , noChildren, noAttrs, radialLink, transform, TransformFn, fontFamily, fontSize, strokeLineJoin
+  , noAttributes, radialLink, transform, TransformFn, fontFamily, fontSize, strokeLineJoin
   , strokeColor, strokeColor_D, strokeWidth, strokeWidth_D, strokeOpacity, strokeOpacity_D, radius, radius_D, fill, fill_D, viewBox
 ) where
 
@@ -107,9 +108,7 @@ data Selection model =
   | Join {
       projection   :: model -> SubModel -- function that can extract submodel for subselection
     , element      :: Element -- has to agree with the Element in enter/update/exit
-    , enter        :: Selection model
-    , update       :: Selection model
-    , exit         :: Selection model
+    , enterUpdateExit :: EnterUpdateExit model
   }
   | Transition {
       label        :: Maybe String
@@ -118,13 +117,32 @@ data Selection model =
   }
   | NullSelection -- used for optional Join functions
 
-initialSelect :: forall model. Selector -> Label -> Array Attr -> Array (Selection model) -> Selection model 
-initialSelect selector label attributes children = 
+type EnterUpdateExit model = {
+    enter  :: Selection model
+  , update :: Selection model
+  , exit   :: Selection model
+}
+
+selectInDOM :: forall model. Selector -> Label -> Array Attr -> Array (Selection model) -> Selection model 
+selectInDOM selector label attributes children = 
   InitialSelect { label, selector, attributes, children }
 
-append :: forall model. Element -> Array Attr -> Array (Selection model) -> Selection model 
+append :: forall model.        Element           -> Array Attr -> Array (Selection model) -> Selection model 
 append element attributes children = 
   Append { label: Nothing, element, attributes, children }
+
+append_ :: forall model.       Element           -> Array Attr                            -> Selection model 
+append_ element attributes = 
+  Append { label: Nothing, element, attributes, children: [] }
+
+appendAs :: forall model. Label -> Element -> Array Attr -> Array (Selection model) -> Selection model 
+appendAs label element attributes children = 
+  Append { label: Just label, element, attributes, children }
+
+appendAs_ :: forall model. Label -> Element -> Array Attr ->                           Selection model 
+appendAs_ label element attributes = 
+  Append { label: Just label, element, attributes, children: [] }
+
 
 -- add a Selection to the children field of another selection
 extendSelection :: forall model. Selection model -> Selection model -> Selection model
@@ -132,33 +150,36 @@ extendSelection a b =
   case a of
     (Append a) -> Append a { children = singleton b <> a.children}
     otherwise -> a -- TODO for now we'll just do nothing in other cases
-    -- (InitialSelect i)
+    -- (selectInDOM i)
     -- (Join j)
     -- (Transition _)
     -- NullSelection
 
-appendNamed :: forall model. Label -> Element -> Array Attr -> Array (Selection model) -> Selection model 
-appendNamed label element attributes children = 
-  Append { label: Just label, element, attributes, children }
 
-noUpdate       = NullSelection :: forall model. Selection model
-noExit         = NullSelection :: forall model. Selection model
-emptySelection = NullSelection :: forall model. Selection model
+-- noUpdate       = NullSelection :: forall model. Selection model
+-- noExit         = NullSelection :: forall model. Selection model
+-- emptySelection = NullSelection :: forall model. Selection model
 
 join :: forall model. Element
     -> (model -> SubModel) -- projection function to present only the appropriate data to this join
-    -> Selection model -- minimal definition requires only enter
-    -> Selection model -- update is optional (ie can be given NullSelection)
-    -> Selection model -- exit is optional (ie can be given NullSelection)
+    -> EnterUpdateExit model -- minimal definition requires only enter
     -> Selection model
-join element projection enter update exit = Join { projection, element, enter, update, exit }
+join element projection enterUpdateExit = 
+  Join { projection, element, enterUpdateExit }
+
+simpleJoin :: forall model. Element
+    -> (model -> SubModel) -- projection function to present only the appropriate data to this join
+    -> Selection model -- minimal definition requires only enter
+    -> Selection model
+simpleJoin element projection enter = 
+  Join { projection, element, enterUpdateExit: { enter, update: NullSelection, exit: NullSelection } }
 
 transition :: forall model. Number -> Array Attr -> Selection model 
 transition duration attributes = 
   Transition { label: Nothing, duration, attributes }
 
-transitionNamed :: forall model. Label -> Number -> Array Attr -> Selection model 
-transitionNamed label duration attributes = 
+transitionAs :: forall model. Label -> Number -> Array Attr -> Selection model 
+transitionAs label duration attributes = 
   Transition { label: Just label, duration, attributes }
 
 -- internal definitions of Attrs, this is what the interpreter will work with
@@ -179,11 +200,8 @@ data Attr =
 -- so in our DSL we will just make it one and hide that fact
   | TextAttr        (Datum -> String)
 -- prettier definitions for attributes
-noAttrs :: Array Attr
-noAttrs = []
-
-noChildren :: forall a. Array (Selection a)
-noChildren = []
+noAttributes :: Array Attr
+noAttributes = []
 
 strokeColor :: String -> Attr
 strokeColor = StaticString "stroke"
@@ -255,9 +273,9 @@ instance showSelection :: Show (Selection a) where
                   Nothing -> "\n"
     in prefix <> ".append(\"" <> show r.element <> "\")" <> show r.attributes <> show r.children
   show (Join r) = "Join" <> 
-                  show r.enter <>
-                  show r.update <>
-                  show r.exit
+                  show r.enterUpdateExit.enter <>
+                  show r.enterUpdateExit.update <>
+                  show r.enterUpdateExit.exit
   show (Transition r) = 
     let prefix = case r.label of
                   (Just name) -> "const " <> name <> " = "

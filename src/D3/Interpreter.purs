@@ -156,43 +156,44 @@ interpretDrag (DefaultDrag selectionName simulationName) = do
 -- |               SELECTION interpreter
 
 -- TODO fugly, fix later
-interpretSelection :: forall model. Selection model -> D3 model Unit
+interpretSelection :: forall model. Selection model -> D3 model NativeSelection
 interpretSelection = case _ of
-  -- InitialSelection is the only one that we can start with (alt. use IxMonad)
+  -- selectInDOMion is the only one that we can start with (alt. use IxMonad)
   s@(InitialSelect r) -> go nullSelectionJS s 
+  -- TODO handle extend selection cases needed for update / re-entrancy
   -- TODO raise error, or structure differently
-  _ -> pure unit 
+  _ -> pure nullSelectionJS 
 
-go :: forall model. NativeSelection -> Selection model -> D3 model Unit
+go :: forall model. NativeSelection -> Selection model -> D3 model NativeSelection
 go activeSelection selection = do 
   case selection of
     (InitialSelect r) -> do
-          let root = spy "InitialSelect" $ d3SelectAllJS r.selector
+          let root = spy "selectInDOM" $ d3SelectAllJS r.selector
           updateScope root (Just r.label)
           traverse_ (applyAttr root) r.attributes
           traverse_ (go root) r.children
-          pure unit
+          pure root
           
     (Append r) -> do
           let appendSelection = spy "Append" d3AppendElementJS activeSelection (show r.element)
           updateScope appendSelection r.label
           traverse_ (applyAttr appendSelection) r.attributes
           traverse_ (go appendSelection) (reverse r.children)
-          pure unit
+          pure appendSelection
 
     (Join r) -> do
           (Context model scope) <- get
           let joinSelection = d3JoinJS activeSelection (show r.element) (spy "submodel" $ r.projection model)
-          enterSelection  <- go joinSelection r.enter
+          enterSelection  <- go joinSelection r.enterUpdateExit.enter
           -- updateSelection <- go joinSelection r.update
           -- exitSelection   <- go joinSelection r.exit
           -- need to get the enter, update and exit lined up and pass them all at once?
           -- if we get three selection handles back we can add to them later using names
           -- joinName.enter, joinName.update, joinName.exit for example
-          pure unit
+          pure joinSelection
 
-    (Transition _) -> pure unit
-    NullSelection -> pure unit
+    (Transition _) -> pure activeSelection
+    NullSelection -> pure activeSelection
 
 updateScope :: forall model. NativeSelection -> Maybe String -> D3 model Unit
 updateScope selection Nothing      = pure unit 

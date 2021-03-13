@@ -33,10 +33,11 @@ getWindowWidthHeight = do
 forceInterpreter :: Selection Force.Model -> StateT (D3State Force.Model) Effect Unit
 forceInterpreter forceChart = do
   simulation <- interpretSimulation Force.simulation Force.getNodes Force.getLinks Force.makeModel
-  interpretSelection forceChart
+  _ <- interpretSelection forceChart
   interpretTickMap simulation Force.myTickMap
   interpretDrag Force.myDrag
   startSimulation simulation
+  pure unit -- should be we returning the updated Selection? and the Simulation? 
 
 
 main :: Effect Unit
@@ -65,7 +66,13 @@ main = launchAff_ do -- Aff
 
   -- then the General Update Pattern example
   let lettersChart = GUP.chartInit widthHeight'
-  let letters = GUP.makeModel $ toCharArray "abcdefghijklmnopqrstuvwxyz"
+  let letters1 = GUP.makeModel $ toCharArray "abcdefghijklmnopqrstuvwxyz"
+  let letters2 = GUP.makeModel $ toCharArray "acefghiklnpqrtuwyz"
   let lettersScope = initialScope
-  liftEffect $ runStateT (interpretSelection lettersChart) (Context letters lettersScope)
-  -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate 
+  -- (Tuple a s) <- liftEffect $ runStateT (interpretSelection lettersChart) (Context letters1 lettersScope)
+  -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate
+  -- and we really want the NativeSelection to be passed in via scope, right?
+  -- _ <- liftEffect $ runStateT (interpretSelection chartUpdate ) (Context letters2 lettersScope)
+  -- _ <- liftEffect $ runStateT (interpretSelection chartUpdate ) (Context letters2 lettersScope)
+  -- _ <- liftEffect $ runStateT (interpretSelection chartUpdate ) (Context letters2 lettersScope)
+  pure unit

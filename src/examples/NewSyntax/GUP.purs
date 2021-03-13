@@ -29,21 +29,18 @@ chartInit (Tuple width height) =
   let
     origin = { x: -width / 2.0, y: -height / 2.0 }
   in
-    initialSelect "div#GUP" "General Update Pattern" noAttrs [
-        appendNamed "svg" Svg [ viewBox origin.x origin.y width height ] noChildren
+    selectInDOM "div#GUP" "General Update Pattern" noAttributes [
+        appendAs_ "svg" Svg [ viewBox origin.x origin.y width height ]
     ]
 
-chartUpdate :: Selection (Model Char) -> Model Char -> Selection (Model Char) 
+chartUpdate :: NativeSelection -> Model Char -> Selection (Model Char) 
 chartUpdate svg letters =
-    extendSelection svg $
-        join Text identity' 
-            (append Text [ fill "green"
-                        , StaticNumber "y" (-30.0)
-                        , TextAttr (\d -> singleton (d3DOMelement d).data )] noChildren)
-            (append Text [ fill "black"
-                        , StaticNumber "y" 0.0 ] noChildren)
-            (append Text [ fill "brown"
-                        , StaticNumber "y" 30.0 ] noChildren)
+    extendSelection (unsafeCoerce svg) $ -- TODO temporary hack to type check / take stock of state of code
+        join Text identity' {
+            enter:  append_ Text [ fill "green" , StaticNumber "y" (-30.0), TextAttr (\d -> singleton (d3DOMelement d).data )]
+          , update: append_ Text [ fill "black", StaticNumber "y" 0.0 ]
+          , exit:   append_ Text [ fill "brown", StaticNumber "y" 30.0 ]
+        }
  
 -- TODO this seems like a heinous wart, we need a (Model -> SubModel) even if it's functionally `identity` 
 -- this should be fixed in Base or Interpreter 

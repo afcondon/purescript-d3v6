@@ -101,36 +101,38 @@ chart (Tuple width height) =
     -- same translation for both text and node
     translate d = "translate(" <> show (d3TreeNode d).y <> ",0)"
   in
-    initialSelect "div#tree" "treeLayout" noAttrs $ [
-      appendNamed "svg" Svg [ viewBox origin.x origin.y width height ] [
-        append Group noAttrs 
-          [ join Path modelLinks
-            (appendNamed "link" Path [ strokeWidth 1.5
+    selectInDOM "div#tree" "treeLayout" noAttributes $ [
+      appendAs "svg" Svg [ viewBox origin.x origin.y width height ] [
+        append Group noAttributes 
+          [ simpleJoin Path modelLinks
+            (appendAs_ "link" Path [ strokeWidth 1.5
                                      , strokeColor "#555"
                                      , strokeOpacity 0.4
                                      , fill "none"
-                                     , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) ] noChildren)
-            noUpdate noExit ]
+                                     , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
+                                    ] ) 
+          ]
           
-        , append Group noAttrs
-          [ join Circle modelDescendants
-            (appendNamed "node" Circle [ radius 2.5
+        , append Group noAttributes
+          [ simpleJoin Circle modelDescendants
+            (appendAs_ "node" Circle [ radius 2.5
                                        , fill_D (\d -> if hasChildren d then "#555" else "#999")
-                                       , transform [ rotateCommon, translate ] ] noChildren)
-            noUpdate noExit ]
+                                       , transform [ rotateCommon, translate 
+                                     ] ] ) 
+          ]
         , append Group [ fontFamily "sans-serif"
                        , fontSize 10.0
                        , strokeLineJoin Round
                        , strokeWidth 3.0]
-          [ join Text modelDescendants
-            (appendNamed "text" Text [ transform [ rotateCommon, translate, rotateText2]
+          [ simpleJoin Text modelDescendants
+            (appendAs_ "text" Text [ transform [ rotateCommon, translate, rotateText2]
                                      , StaticString "dy" "0.31em"
                                      , NumberAttr "x" labelOffset
                                      , StringAttr "text-anchor" textOffset
                                      , TextAttr (\d -> (d3TreeNode d).data.name) 
                                      -- TODO add clone step later 
-                                     ] noChildren)
-            noUpdate noExit ]
+                                     ] )
+          ]
         ]
     ]
 
