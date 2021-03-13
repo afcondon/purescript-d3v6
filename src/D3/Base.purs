@@ -1,6 +1,7 @@
 module D3.Base (
-    selectInDOM, append, append_, appendAs, appendAs_
-  , join, simpleJoin, transition, transitionAs, extendSelection
+    selectInDOM, nameSelection
+  , svg, svg_, group, group_, div, div_, line, line_, circle, circle_, path, path_, text, text_
+  , join, simpleJoin, transition, extendSelection
 -- foreign (opaque) types for D3 things that are only needed as references on PureScript side
   , Datum, SubModel, NativeSelection, Scale
 -- foreign functions exported by Base
@@ -24,7 +25,7 @@ import Data.Maybe (Maybe(..))
 -- | these foreign types allow us to work with some very funky typing without 
 -- | adding tonnes of syntactic noise or type complexity
 -- | NativeSelection is an opaque type which we keep in order to feed it back to D3 
--- | when we look up named Selections, Transitions, Simulations, whatever
+-- | when we look up nameSelection Selections, Transitions, Simulations, whatever
 foreign import data NativeSelection :: Type
 -- | The Datum models the (variable / polymorphic) type of the lambdas used in Attr
 foreign import data Datum       :: Type
@@ -92,7 +93,7 @@ data DragBehavior = DefaultDrag String String -- only one implementation rn and 
 -- | between Selection/Transition
 data Selection model = 
     InitialSelect {
-      label        :: String -- root must have a label so that we have a key for it in the map
+      label        :: Maybe String -- root should have a label so that we have a key for it in the map, but we will add it with nameSelection fn
     , selector     :: String
     , attributes   :: Array Attr
     , children     :: Array (Selection model)
@@ -123,9 +124,18 @@ type EnterUpdateExit model = {
   , exit   :: Selection model
 }
 
-selectInDOM :: forall model. Selector -> Label -> Array Attr -> Array (Selection model) -> Selection model 
-selectInDOM selector label attributes children = 
-  InitialSelect { label, selector, attributes, children }
+nameSelection :: forall model. Label -> Selection model -> Selection model
+nameSelection label = 
+  case _ of 
+    (InitialSelect s) -> InitialSelect $ s { label = Just label }
+    (Append s)        -> Append $ s { label = Just label }
+    (Transition t)    -> Transition $ t { label = Just label }
+    (Join j)          -> Join j
+    NullSelection     -> NullSelection
+
+selectInDOM :: forall model. Selector -> Array Attr -> Array (Selection model) -> Selection model 
+selectInDOM selector attributes children = 
+  InitialSelect { label: Nothing, selector, attributes, children }
 
 append :: forall model.        Element           -> Array Attr -> Array (Selection model) -> Selection model 
 append element attributes children = 
@@ -135,13 +145,48 @@ append_ :: forall model.       Element           -> Array Attr                  
 append_ element attributes = 
   Append { label: Nothing, element, attributes, children: [] }
 
-appendAs :: forall model. Label -> Element -> Array Attr -> Array (Selection model) -> Selection model 
-appendAs label element attributes children = 
-  Append { label: Just label, element, attributes, children }
+-- , svg, svg_, group, group_, div, div_, line, line_, circle, circle_, path, path_, text, text_
+svg :: forall model. Array Attr -> Array (Selection model) -> Selection model 
+svg = append Svg 
 
-appendAs_ :: forall model. Label -> Element -> Array Attr ->                           Selection model 
-appendAs_ label element attributes = 
-  Append { label: Just label, element, attributes, children: [] }
+svg_ :: forall model. Array Attr                            -> Selection model 
+svg_ = append_ Svg
+
+group :: forall model. Array Attr -> Array (Selection model) -> Selection model 
+group = append Group 
+
+group_ :: forall model. Array Attr                            -> Selection model 
+group_ = append_ Group
+
+div :: forall model. Array Attr -> Array (Selection model) -> Selection model 
+div = append Div 
+
+div_ :: forall model. Array Attr                            -> Selection model 
+div_ = append_ Div
+
+line :: forall model. Array Attr -> Array (Selection model) -> Selection model 
+line = append Line 
+
+line_ :: forall model. Array Attr                            -> Selection model 
+line_ = append_ Line
+
+circle :: forall model. Array Attr -> Array (Selection model) -> Selection model 
+circle = append Circle 
+
+circle_ :: forall model. Array Attr                            -> Selection model 
+circle_ = append_ Circle
+
+path :: forall model. Array Attr -> Array (Selection model) -> Selection model 
+path = append Path 
+
+path_ :: forall model. Array Attr                            -> Selection model 
+path_ = append_ Path
+
+text :: forall model. Array Attr -> Array (Selection model) -> Selection model 
+text = append Text 
+
+text_ :: forall model. Array Attr                            -> Selection model 
+text_ = append_ Text
 
 
 -- add a Selection to the children field of another selection
@@ -177,10 +222,6 @@ simpleJoin element projection enter =
 transition :: forall model. Number -> Array Attr -> Selection model 
 transition duration attributes = 
   Transition { label: Nothing, duration, attributes }
-
-transitionAs :: forall model. Label -> Number -> Array Attr -> Selection model 
-transitionAs label duration attributes = 
-  Transition { label: Just label, duration, attributes }
 
 -- internal definitions of Attrs, this is what the interpreter will work with
 data Attr =

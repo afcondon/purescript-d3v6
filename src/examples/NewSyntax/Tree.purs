@@ -101,40 +101,46 @@ chart (Tuple width height) =
     -- same translation for both text and node
     translate d = "translate(" <> show (d3TreeNode d).y <> ",0)"
   in
-    selectInDOM "div#tree" "treeLayout" noAttributes $ [
-      appendAs "svg" Svg [ viewBox origin.x origin.y width height ] [
-        append Group noAttributes 
-          [ simpleJoin Path modelLinks
-            (appendAs_ "link" Path [ strokeWidth 1.5
-                                     , strokeColor "#555"
-                                     , strokeOpacity 0.4
-                                     , fill "none"
-                                     , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
-                                    ] ) 
+    nameSelection "treeLayout" $
+      selectInDOM "div#tree" [] $ [
+        nameSelection "svg" $
+          svg [ viewBox origin.x origin.y width height ] [
+            group [] 
+              [ simpleJoin Path modelLinks $ 
+                  nameSelection "link" $
+                    path_ [ strokeWidth 1.5
+                                  , strokeColor "#555"
+                                  , strokeOpacity 0.4
+                                  , fill "none"
+                                  , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
+                                ]
+              ]
+              
+          , group []
+            [ simpleJoin Circle modelDescendants $
+                nameSelection "node" $
+                  circle_ [ radius 2.5
+                                  , fill_D (\d -> if hasChildren d then "#555" else "#999")
+                                  , transform [ rotateCommon, translate 
+                                ] ]
+            ]
+          , group 
+              [ fontFamily "sans-serif"
+              , fontSize 10.0
+              , strokeLineJoin Round
+              , strokeWidth 3.0 ]
+              [ simpleJoin Text modelDescendants $
+                  nameSelection "text" $
+                    text_ [ transform [ rotateCommon, translate, rotateText2]
+                                  , StaticString "dy" "0.31em"
+                                  , NumberAttr "x" labelOffset
+                                  , StringAttr "text-anchor" textOffset
+                                  , TextAttr (\d -> (d3TreeNode d).data.name) 
+                                  -- TODO add clone step later 
+                                  ]
+              ]
           ]
-          
-        , append Group noAttributes
-          [ simpleJoin Circle modelDescendants
-            (appendAs_ "node" Circle [ radius 2.5
-                                       , fill_D (\d -> if hasChildren d then "#555" else "#999")
-                                       , transform [ rotateCommon, translate 
-                                     ] ] ) 
-          ]
-        , append Group [ fontFamily "sans-serif"
-                       , fontSize 10.0
-                       , strokeLineJoin Round
-                       , strokeWidth 3.0]
-          [ simpleJoin Text modelDescendants
-            (appendAs_ "text" Text [ transform [ rotateCommon, translate, rotateText2]
-                                     , StaticString "dy" "0.31em"
-                                     , NumberAttr "x" labelOffset
-                                     , StringAttr "text-anchor" textOffset
-                                     , TextAttr (\d -> (d3TreeNode d).data.name) 
-                                     -- TODO add clone step later 
-                                     ] )
-          ]
-        ]
-    ]
+      ]
 
 
 

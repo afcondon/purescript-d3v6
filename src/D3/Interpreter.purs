@@ -37,7 +37,7 @@ foreign import nullSelectionJS     ::           NativeSelection
 
 -- | foreign types associated with Force Layout Simulation
 foreign import initSimulationJS :: SimulationConfig -> NativeSelection
--- TODO tick functions should be named too, so this should be param'd with a tick NativeSelection too!
+-- TODO tick functions should be nameSelection too, so this should be param'd with a tick NativeSelection too!
 foreign import addAttrFnToTickJS :: NativeSelection -> Attr -> Unit
 foreign import attachTickFnToSimulationJS :: NativeSelection -> Unit
 foreign import attachDefaultDragBehaviorJS :: NativeSelection -> NativeSelection -> Unit
@@ -169,7 +169,7 @@ go activeSelection selection = do
   case selection of
     (InitialSelect r) -> do
           let root = spy "selectInDOM" $ d3SelectAllJS r.selector
-          updateScope root (Just r.label)
+          updateScope root r.label
           traverse_ (applyAttr root) r.attributes
           traverse_ (go root) r.children
           pure root
