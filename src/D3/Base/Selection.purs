@@ -11,6 +11,8 @@ type Label = String
 type Selector = String
 data Element = Svg | Group | Div | Line | Circle | Path | Text
 
+type Projection model = model -> SubModel
+
 -- | Types to represent Selection and Insertion
 -- | you can append a list of many (different) elements 
 -- | or an entire selection of only one type of element bound to some data
@@ -32,7 +34,7 @@ data Selection model =
   }
   -- d3.selectAll().data().join() pattern
   | Join {
-      projection   :: model -> SubModel -- function that can extract submodel for subselection
+      projection   :: Maybe (Projection model) -- function that can extract submodel for subselection
     , element      :: Element -- has to agree with the Element in enter/update/exit
     , enterUpdateExit :: EnterUpdateExit model
   }
@@ -81,30 +83,44 @@ extendSelection a b =
     -- (Transition _)
     -- NullSelection
 
-
 -- noUpdate       = NullSelection :: forall model. Selection model
 -- noExit         = NullSelection :: forall model. Selection model
 -- emptySelection = NullSelection :: forall model. Selection model
 
-join :: forall model. 
-    Element
-  -> (model -> SubModel) -- projection function to present only the appropriate data to this join
+joinAllData :: forall model. 
+     Element
   -> EnterUpdateExit model -- minimal definition requires only enter
   -> Selection model
-join element projection enterUpdateExit = 
-  Join { projection, element, enterUpdateExit }
+joinAllData element enterUpdateExit = 
+  Join { projection: Nothing, element, enterUpdateExit }
 
-infixl 1 join as <-+->
-infixl 1 simpleJoin as <->
-
-simpleJoin :: forall model. 
-      Element
-  -> (model -> SubModel) -- projection function to present only the appropriate data to this join
+simpleJoinAllData :: forall model. 
+     Element
   -> Selection model -- minimal definition requires only enter
   -> Selection model
-simpleJoin element projection enter = 
-  Join { projection, element, enterUpdateExit: { enter, update: NullSelection, exit: NullSelection } }
+simpleJoinAllData element enter = 
+  Join { projection: Nothing, element, enterUpdateExit: { enter, update: NullSelection, exit: NullSelection } }
  
+joinToSubset :: forall model. 
+     Element
+  -> Projection model-- projection function to present only the appropriate data to this join
+  -> EnterUpdateExit model -- minimal definition requires only enter
+  -> Selection model
+joinToSubset element projection enterUpdateExit = 
+  Join { projection: Just projection, element, enterUpdateExit }
+
+simpleJoinSubSet:: forall model. 
+     Element
+  -> Projection model -- projection function to present only the appropriate data to this join
+  -> Selection model  -- minimal definition requires only enter
+  -> Selection model
+simpleJoinSubSet element projection enter = 
+  Join { projection: Just projection, element, enterUpdateExit: { enter, update: NullSelection, exit: NullSelection } }
+ 
+infixl 1 joinAllData       as <-+->
+infixl 1 simpleJoinAllData as <--->
+infixl 1 joinToSubset      as <-/\->
+infixl 1 simpleJoinSubSet  as <->
 
 
 -- |              Show instance etc

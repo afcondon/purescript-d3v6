@@ -80,14 +80,14 @@ textAnchor = StaticString "text-anchor"
 computeTextAnchor :: (Datum -> String) -> Attr
 computeTextAnchor = StringAttr "text-anchor"
 
-x :: Number -> Attr
-x = StaticNumber "x"
+x :: Number -> DomUnit -> Attr
+x n u = StaticString "x" $ show n <> show u
 
 computeX :: (Datum -> Number) -> DomUnit -> Attr
 computeX f u = StringAttr "x" (\n -> show (f n) <> show u)
 
-y :: Number -> Attr
-y = StaticNumber "y"
+y :: Number -> DomUnit -> Attr
+y n u = StaticString "y" $ show n <> show u
 
 computeY :: (Datum -> Number) -> Attr
 computeY = NumberAttr "y"

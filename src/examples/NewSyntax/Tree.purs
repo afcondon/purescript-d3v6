@@ -168,9 +168,9 @@ textOffset d =
 foreign import d3HierarchyLinks :: D3Tree -> SubModel
 foreign import d3HierarchyDescendants :: D3Tree -> SubModel
 
-modelLinks :: forall a. Model a -> SubModel
-modelLinks (Model model) = d3HierarchyLinks model.d3Tree
+modelLinks :: forall m. Model m -> SubModel
+modelLinks (Model m) = d3HierarchyLinks m.d3Tree
 
-modelDescendants :: forall a. Model a -> SubModel
-modelDescendants (Model model) = d3HierarchyDescendants model.d3Tree
+modelDescendants :: forall m. Model m -> SubModel
+modelDescendants (Model m) = d3HierarchyDescendants m.d3Tree
 
