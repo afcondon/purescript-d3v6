@@ -57,10 +57,10 @@ computeRadius :: (Datum -> Number) -> Attr
 computeRadius = NumberAttr "r"
 
 fill :: String -> Attr
-fill = StaticString "fill_"
+fill = StaticString "fill"
 
 computeFill :: (Datum -> String) -> Attr
-computeFill = StringAttr "fill_"
+computeFill = StringAttr "fill"
 
 viewBox :: Number -> Number -> Number -> Number -> Attr
 viewBox xo yo width height = StaticArrayNumber "viewBox" [ xo, yo, width, height ]
