@@ -2,8 +2,8 @@ module D3.Layout.Trees (radialLink) where
 
 import Prelude
 
-import D3.Attributes (Attr(..))
-import D3.Foreign (Datum)
+import D3.Base.Attributes (Attr(..))
+import D3.Base.Foreign (Datum)
 
 foreign import d3LinkRadial :: (Datum -> Number) -> (Datum -> Number) -> (Datum -> String)
 radialLink :: (Datum -> Number) -> (Datum -> Number) -> Attr

@@ -1,7 +1,7 @@
-module D3.Layout.Simulation where
+module D3.Base.Layout.Simulation where
 
-import D3.Attributes (Attr)
-import D3.Selection (Label)
+import D3.Base.Attributes (Attr)
+import D3.Base.Selection (Label)
 import Prelude (Unit)
 
 import Data.Map (Map)

@@ -1,6 +1,6 @@
-module D3.Attributes where
+module D3.Base.Attributes where
 
-import D3.Foreign (Datum)
+import D3.Base.Foreign (Datum)
 import Prelude (class Show, flap, show, ($), (<>))
 
 import Data.Array (intercalate)

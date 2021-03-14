@@ -1,4 +1,4 @@
-module D3.Foreign where
+module D3.Base.Foreign where
 
 -- | these foreign types allow us to work with some very funky typing without 
 -- | adding tonnes of syntactic noise or type complexity

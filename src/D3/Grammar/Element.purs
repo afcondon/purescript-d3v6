@@ -1,7 +1,7 @@
-module D3.Element  where
+module D3.Base.Element  where
 
-import D3.Attributes (Attr)
-import D3.Selection (Element(..), Selection, append, append_)
+import D3.Base.Attributes (Attr)
+import D3.Base.Selection (Element(..), Selection, append, append_)
 
 svg :: forall model. Array Attr -> Array (Selection model) -> Selection model 
 svg = append Svg 

@@ -1,7 +1,7 @@
-module D3.Transition (transition) where
+module D3.Base.Transition (transition) where
 
-import D3.Attributes (Attr)
-import D3.Selection (Selection(..))
+import D3.Base.Attributes (Attr)
+import D3.Base.Selection (Selection(..))
 
 import Data.Maybe (Maybe(..))
 

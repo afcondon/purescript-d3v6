@@ -1,7 +1,7 @@
-module D3.Selection where
+module D3.Base.Selection where
 
-import D3.Attributes
-import D3.Foreign
+import D3.Base.Attributes
+import D3.Base.Foreign
 import Prelude
 
 import Data.Maybe (Maybe(..))
