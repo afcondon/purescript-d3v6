@@ -1,10 +1,4 @@
-module D3.Attributes (
-    strokeColor, computeStrokeColor, strokeWidth, computeStrokeWidth, strokeOpacity, computeStrokeOpacity
-  , radius, computeRadius, fill, computeFill, viewBox, fontFamily, fontSize, computeText
-  , x, computeX, y, computeY, dx, dy, computeDX, computeDY, textAnchor, computeTextAnchor
-  , Attr(..)
-  , DomUnit(..)
-) where
+module D3.Attributes where
 
 import D3.Foreign (Datum)
 import Prelude (class Show, flap, show, ($), (<>))
@@ -121,11 +115,8 @@ instance showLineJoin :: Show LineJoin where
 strokeLineJoin :: LineJoin -> Attr
 strokeLineJoin linejoin = StaticString "stroke-linejoin" $ show linejoin
     
-foreign import d3LinkRadial :: (Datum -> Number) -> (Datum -> Number) -> (Datum -> String)
-radialLink :: (Datum -> Number) -> (Datum -> Number) -> Attr
-radialLink angleFn radius_Fn = StringAttr "d" $ d3LinkRadial angleFn radius_Fn
-
 type TransformFn = Datum -> String
+
 transform :: Array TransformFn -> Attr
 transform fs = StringAttr "transform" (\d -> showTransform d)
   where

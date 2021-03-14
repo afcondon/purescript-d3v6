@@ -9,6 +9,8 @@ module NewSyntax.Tree (
 import D3.Base
 
 import Affjax (Error)
+import D3.Attributes (LineJoin(..), strokeLineJoin, transform)
+import D3.Layout.Trees (radialLink)
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..))
 import Debug.Trace (spy)
