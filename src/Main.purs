@@ -39,7 +39,7 @@ forceInterpreter forceChart = do
   startSimulation simulation
   pure unit -- should be we returning the updated Selection? and the Simulation? 
 
-
+-- TODO take the file reading stuff out so that we can see the essentials
 main :: Effect Unit
 main = launchAff_ do -- Aff 
   widthHeight    <- liftEffect getWindowWidthHeight
@@ -49,16 +49,16 @@ main = launchAff_ do -- Aff
 
   -- first, a force layout example
   forceJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/miserables.json"
-  let forceChart = Force.chart widthHeight'
-  let fileData   = Force.readModelFromFileContents forceJSON
-  let forceModel = Force.makeModel fileData.links fileData.nodes
-  let forceScope = initialScope
+  let forceChart   = Force.chart widthHeight'
+  let fileData     = Force.readModelFromFileContents forceJSON
+  let forceModel   = Force.makeModel fileData.links fileData.nodes
+  let forceScope   = initialScope
   _ <- liftEffect $ runStateT (forceInterpreter forceChart) (Context forceModel forceScope)
 
   -- then a radial tree
   treeJSON      <- AJAX.get ResponseFormat.string "http://localhost:1234/flare-2.json"
-  let treeChart = Tree.chart widthHeight'
-  let treeScope = initialScope
+  let treeChart    = Tree.chart widthHeight'
+  let treeScope    = initialScope
   case Tree.readModelFromFileContents widthHeight' treeJSON of
     (Left error) -> liftEffect $ log $ printError error
     (Right treeModel) -> liftEffect $ 
@@ -66,13 +66,13 @@ main = launchAff_ do -- Aff
 
   -- then the General Update Pattern example
   let lettersChart = GUP.chartInit widthHeight'
-  let letters1 = GUP.makeModel $ toCharArray "abcdefghijklmnopqrstuvwxyz"
-  let letters2 = GUP.makeModel $ toCharArray "acefghiklnpqrtuwyz"
+  let letters1     = GUP.makeModel $ toCharArray "abcdefghijklmnopqrstuvwxyz"
+  let letters2     = GUP.makeModel $ toCharArray "acefghiklnpqrtuwyz"
   let lettersScope = initialScope
-  -- (Tuple a s) <- liftEffect $ runStateT (interpretSelection lettersChart) (Context letters1 lettersScope)
+  (Tuple a s) <- liftEffect $ runStateT (interpretSelection lettersChart) (Context letters1 lettersScope)
   -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate
   -- and we really want the NativeSelection to be passed in via scope, right?
-  -- _ <- liftEffect $ runStateT (interpretSelection chartUpdate ) (Context letters2 lettersScope)
+  -- _ <- liftEffect $ runStateT (interpretSelection GUP.chartUpdate ) (Context letters2 lettersScope)
   -- _ <- liftEffect $ runStateT (interpretSelection chartUpdate ) (Context letters2 lettersScope)
   -- _ <- liftEffect $ runStateT (interpretSelection chartUpdate ) (Context letters2 lettersScope)
   pure unit

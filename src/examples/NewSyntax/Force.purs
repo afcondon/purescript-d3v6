@@ -39,7 +39,7 @@ chart (Tuple width height) =
           , strokeOpacity 0.6 ] 
           [ Line <-> modelLinks $  -- "link" Selection used by name in tick function
               nameSelection "link" $
-                line_ [ computeStrokeWidth (\d -> sqrt (d3Link d).value) ]
+                line_ [ computeStrokeWidth (\d -> Px $ sqrt (d3Link d).value) ]
           ]
           
         , group 
@@ -47,7 +47,7 @@ chart (Tuple width height) =
             , strokeOpacity 1.5 ]
             [ Circle <-> modelNodes $ 
               nameSelection "node" $ -- "node" Selection used by name in tick function
-                circle_ [ radius 5.0, computeFill colorByGroup]
+                circle_ [ radius $ Px 5.0, computeFill colorByGroup]
             ]
         ]
     ]
@@ -79,12 +79,12 @@ chartComposed (Tuple width height) =
 linkEnter :: String -> Selection Model
 linkEnter label = 
   nameSelection label $
-    line_ [ computeStrokeWidth (\d -> sqrt (d3Link d).value) ]
+    line_ [ computeStrokeWidth (\d -> Px $ sqrt (d3Link d).value) ]
 
 nodeEnter :: String -> Selection Model
 nodeEnter label = 
   nameSelection label $
-    circle_ [ radius 5.0, computeFill colorByGroup ]
+    circle_ [ radius (Px 5.0), computeFill colorByGroup ]
 
 
 -- | definition of the particular Simulation that we are going to run

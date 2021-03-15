@@ -1,8 +1,8 @@
 module D3.Base.Selection where
 
-import D3.Base.Attributes
-import D3.Base.Foreign
-import Prelude
+import D3.Base.Attributes (Attr)
+import D3.Base.Foreign (SubModel)
+import Prelude (class Show, ($), (<>))
 
 import Data.Maybe (Maybe(..))
 import Data.Array (singleton)
@@ -43,6 +43,9 @@ data Selection model =
     , duration     :: Number
     , attributes   :: Array Attr
   }
+  -- placeholder for a selection that isn't determined til runtime
+  -- and which must be looked up 
+  | RunTimeSelection String (Selection model)
   | NullSelection -- used for optional Join functions
 
 type EnterUpdateExit model = {
@@ -59,33 +62,31 @@ nameSelection label =
     (Transition t)    -> Transition $ t { label = Just label }
     (Join j)          -> Join j
     NullSelection     -> NullSelection
+    -- TODO exception if renaming attempted
+    (RunTimeSelection n s) -> RunTimeSelection n s -- no renaming allowed
 
 selectInDOM :: forall model. Selector -> Array Attr -> Array (Selection model) -> Selection model 
 selectInDOM selector attributes children = 
   InitialSelect { label: Nothing, selector, attributes, children }
 
-append :: forall model.        Element           -> Array Attr -> Array (Selection model) -> Selection model 
+append :: forall model.        Element              -> Array Attr -> Array (Selection model) -> Selection model 
 append element attributes children = 
   Append { label: Nothing, element, attributes, children }
 
-append_ :: forall model.       Element           -> Array Attr                            -> Selection model 
+append_ :: forall model.       Element              -> Array Attr                            -> Selection model 
 append_ element attributes = 
   Append { label: Nothing, element, attributes, children: [] }
 
 -- add a Selection to the children field of another selection
+-- only works on Append selections for now
 extendSelection :: forall model. Selection model -> Selection model -> Selection model
-extendSelection a b = 
-  case a of
-    (Append a) -> Append a { children = singleton b <> a.children}
-    otherwise -> a -- TODO for now we'll just do nothing in other cases
-    -- (selectInDOM i)
-    -- (Join j)
-    -- (Transition _)
-    -- NullSelection
+extendSelection s1 s2 = 
+  case s1 of
+    (Append a) -> Append a { children = singleton s2 <> a.children}
+    otherwise -> s1 -- TODO for now we'll just do nothing in other cases
 
--- noUpdate       = NullSelection :: forall model. Selection model
--- noExit         = NullSelection :: forall model. Selection model
--- emptySelection = NullSelection :: forall model. Selection model
+modifySelection :: forall model. String -> Selection model -> Selection model
+modifySelection name b = RunTimeSelection name b
 
 joinAllData :: forall model. 
      Element
@@ -122,26 +123,27 @@ infixl 1 simpleJoinAllData as <--->
 infixl 1 joinToSubset      as <-/\->
 infixl 1 simpleJoinSubSet  as <->
 
-
+-- TODO rewrite the show instance once Selection ADT settles down
 -- |              Show instance etc
 
-instance showSelection :: Show (Selection a) where
-  show (InitialSelect r) = "d3.selectAll(\"" <> r.selector <> "\")" <> " name: " <> show r.label <> " " <> show r.attributes <> show r.children
-  show (Append r) = 
-    let prefix = case r.label of
-                  (Just name) -> "const " <> name <> " = "
-                  Nothing -> "\n"
-    in prefix <> ".append(\"" <> show r.element <> "\")" <> show r.attributes <> show r.children
-  show (Join r) = "Join" <> 
-                  show r.enterUpdateExit.enter <>
-                  show r.enterUpdateExit.update <>
-                  show r.enterUpdateExit.exit
-  show (Transition r) = 
-    let prefix = case r.label of
-                  (Just name) -> "const " <> name <> " = "
-                  Nothing -> "\n"
-    in prefix <> ".transition(\"" <> show r.duration <> "\")" <> show r.attributes
-  show NullSelection = ""
+-- instance showSelection :: Show (Selection a) where
+--   show (InitialSelect r) = "d3.selectAll(\"" <> r.selector <> "\")" <> " name: " <> show r.label <> " " <> show r.attributes <> show r.children
+--   show (Append r) = 
+--     let prefix = case r.label of
+--                   (Just name) -> "const " <> name <> " = "
+--                   Nothing -> "\n"
+--     in prefix <> ".append(\"" <> show r.element <> "\")" <> show r.attributes <> show r.children
+--   show (Join r) = "Join" <> 
+--                   show r.enterUpdateExit.enter <>
+--                   show r.enterUpdateExit.update <>
+--                   show r.enterUpdateExit.exit
+--   show (Transition r) = 
+--     let prefix = case r.label of
+--                   (Just name) -> "const " <> name <> " = "
+--                   Nothing -> "\n"
+--     in prefix <> ".transition(\"" <> show r.duration <> "\")" <> show r.attributes
+--   show NullSelection = ""
+--   show (RunTimeSelection name selection) = 
 
 instance showElement :: Show Element where
   show Svg    = "svg"

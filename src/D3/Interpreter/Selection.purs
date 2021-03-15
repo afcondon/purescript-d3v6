@@ -41,10 +41,11 @@ go activeSelection selection = do
 
     (Join r) -> do
       (Context model scope) <- get
-      let joinSelection = 
-              case r.projection of
-              Nothing  -> unsafeCoerce model -- if there is no projection then model === submodel
-              (Just p) -> d3JoinJS activeSelection (show r.element) (spy "submodel" $ p model)
+      let 
+        joinSelection = 
+          case r.projection of
+            Nothing  -> unsafeCoerce model -- if there is no projection then model === submodel
+            (Just p) -> d3JoinJS activeSelection (show r.element) (spy "submodel" $ p model)
       enterSelection  <- go joinSelection r.enterUpdateExit.enter
       -- updateSelection <- go joinSelection r.update
       -- exitSelection   <- go joinSelection r.exit
@@ -53,8 +54,14 @@ go activeSelection selection = do
       -- joinName.enter, joinName.update, joinName.exit for example
       pure joinSelection
 
-    (Transition _) -> pure activeSelection
-    NullSelection -> pure activeSelection
+    -- TODO lookup the selection given by name and run interpreter on it with 
+    (RunTimeSelection _ _) -> do
+      pure activeSelection
+
+    (Transition _) -> do
+      pure activeSelection
+    NullSelection  -> do
+      pure activeSelection
 
 updateScope :: forall model. NativeSelection -> Maybe String -> D3 model Unit
 updateScope selection Nothing      = pure unit 

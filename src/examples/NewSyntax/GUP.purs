@@ -25,27 +25,27 @@ makeModel :: Array Char -> Model Char
 makeModel letters = { letters }
 
 chartInit :: Tuple Number Number -> Selection (Model Char)
-chartInit (Tuple width height) = 
-  let
-    origin = { x: -width / 2.0, y: -height / 2.0 }
-  in
-    nameSelection "General Update Pattern" $ 
-      selectInDOM "div#GUP"
-        []
-        [ nameSelection "svg" $ 
-            svg_ [ viewBox origin.x origin.y width height ]
-        ]
+chartInit (Tuple width height) = do
+  let origin = { x: -width / 2.0, y: -height / 2.0 }
+  nameSelection "General Update Pattern" $ 
+    selectInDOM "div#GUP" -- this is an InitialSelect
+      []
+      [ nameSelection "svg" $ 
+          svg_ [ viewBox origin.x origin.y width height ]
+      ]
 
-chartUpdate :: NativeSelection -> Model Char -> Selection (Model Char) 
-chartUpdate svg letters =
-    extendSelection svg $ -- TODO temporary hack to type check / take stock of state of code
+-- so, the name of the chart is hard-wired here but obviously could be a
+-- parameter in the 
+chartUpdate :: Model Char -> Selection (Model Char) 
+chartUpdate letters =
+    modifySelection "General Update Pattern" $
         Text <-+-> {
             enter:  text_ [ fill "green"
-                          , y (-30.0) Px
+                          , y $ Px (-30.0)
                           , computeText (\d -> singleton (d3DOMelement d).data )]
           , update: text_ [ fill "black"
-                          , y 0.0 Px ]
+                          , y $ Px 0.0 ]
           , exit:   text_ [ fill "brown"
-                          , y 30.0 Px ]
+                          , y $ Px 30.0 ]
         }
  

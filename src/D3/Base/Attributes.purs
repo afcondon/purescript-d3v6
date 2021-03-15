@@ -1,11 +1,14 @@
 module D3.Base.Attributes where
 
 import D3.Base.Foreign (Datum)
+import Data.Array (intercalate)
 import Prelude (class Show, flap, show, ($), (<>))
 
-import Data.Array (intercalate)
-
 -- internal definitions of Attrs, this is what the interpreter will work with
+-- these definitions correspond exactly to what D3 allows polymorphically for attribute setters
+-- the idea is to NOT make this available outside this module eventually, preferring to use
+-- stronger typing and more expressive functions that wrap them, as below
+-- HOWEVER it might be that there are just too many to be practical, time will tell
 data Attr =
 -- first the direct, static attributes
     StaticString    String String
@@ -23,44 +26,44 @@ data Attr =
 -- so in our DSL we will just make it one and hide that fact
   | TextAttr        (Datum -> String)
 
-data DomUnit = Em | Px | Rem | Percent | NoUnit
-instance showDomUnit :: Show DomUnit where
-  show Em = "em"
-  show Px = "px"
-  show Rem = "rem"
-  show Percent = "%"
-  show NoUnit = ""
+data NumberWithUnit = Em Number | Px Number | Rem Number | Percent Number | Pt Number | NoUnit Number
 
 -- prettier definitions for attributes
+-- TODO we're not doing anything to check / constrain the semantics of the units here, but it would be good to do so (type-level machinery?)
+-- TODO do we need more units like "1fr" etc for grids etc? 
+
+-- | Note that in practice any number that has units is really encoding as a string, but that's how JavaScript do
+instance showNumberWithUnit :: Show NumberWithUnit where
+  show = 
+    case _ of
+      (Em n)      -> show n <> "em"
+      (Px n)      -> show n <> "px"
+      (Rem n)     -> show n <> "rem"
+      (Percent n) -> show n <> "%"
+      (Pt n)      -> show n <> "pt"
+      (NoUnit n)  -> show n  
+
+staticNumberAttrWithUnits :: String -> NumberWithUnit -> Attr
+staticNumberAttrWithUnits label n = StaticString label (show n)
+
+datumToStringWithUnit :: (Datum -> NumberWithUnit) -> (Datum -> String)
+datumToStringWithUnit f = (\d -> show $ f d )
+
+-- | static versions of attribute setters, where all selected elements will be given the same value for this attribute
 strokeColor :: String -> Attr
 strokeColor = StaticString "stroke"
 
-computeStrokeColor :: (Datum -> String) -> Attr
-computeStrokeColor = StringAttr "stroke"
+strokeWidth :: NumberWithUnit -> Attr
+strokeWidth = staticNumberAttrWithUnits "stroke-width"
 
-strokeWidth :: Number -> Attr
-strokeWidth = StaticNumber "stroke-width"
-
-computeStrokeWidth :: (Datum -> Number) -> Attr
-computeStrokeWidth = NumberAttr "stroke-width"
-  
 strokeOpacity :: Number -> Attr
 strokeOpacity = StaticNumber "stroke-opacity"
 
-computeStrokeOpacity :: (Datum -> Number) -> Attr
-computeStrokeOpacity = NumberAttr "stroke-opacity"
-
-radius :: Number -> Attr
-radius = StaticNumber "r"
-
-computeRadius :: (Datum -> Number) -> Attr
-computeRadius = NumberAttr "r"
+radius :: NumberWithUnit -> Attr
+radius = staticNumberAttrWithUnits "r"
 
 fill :: String -> Attr
 fill = StaticString "fill"
-
-computeFill :: (Datum -> String) -> Attr
-computeFill = StringAttr "fill"
 
 viewBox :: Number -> Number -> Number -> Number -> Attr
 viewBox xo yo width height = StaticArrayNumber "viewBox" [ xo, yo, width, height ]
@@ -68,41 +71,63 @@ viewBox xo yo width height = StaticArrayNumber "viewBox" [ xo, yo, width, height
 fontFamily :: String -> Attr
 fontFamily = StaticString "font-family"
   
-fontSize :: Number -> Attr
-fontSize = StaticNumber "font-size"
+textAnchor :: String -> Attr
+textAnchor = StaticString "text-anchor"
+
+fontSize :: NumberWithUnit -> Attr
+fontSize = staticNumberAttrWithUnits "font-size"
+
+width :: NumberWithUnit -> Attr
+width = staticNumberAttrWithUnits "width"
+
+height :: NumberWithUnit -> Attr
+height = staticNumberAttrWithUnits "height"
+
+x :: NumberWithUnit -> Attr
+x = staticNumberAttrWithUnits "x"
+
+y :: NumberWithUnit -> Attr
+y = staticNumberAttrWithUnits "y"
+
+dx :: NumberWithUnit -> Attr
+dx = staticNumberAttrWithUnits "dx"
+
+dy :: NumberWithUnit -> Attr
+dy = staticNumberAttrWithUnits "dy"
+
+-- | computed versions of attribute setters, which need a function because the attribute is determined by the datum
+computeStrokeColor :: (Datum -> String) -> Attr
+computeStrokeColor = StringAttr "stroke"
+
+computeFill :: (Datum -> String) -> Attr
+computeFill = StringAttr "fill"
 
 computeText :: (Datum -> String) -> Attr
 computeText = TextAttr
 
-textAnchor :: String -> Attr
-textAnchor = StaticString "text-anchor"
-
 computeTextAnchor :: (Datum -> String) -> Attr
 computeTextAnchor = StringAttr "text-anchor"
 
-x :: Number -> DomUnit -> Attr
-x n u = StaticString "x" $ show n <> show u
+computeStrokeWidth :: (Datum -> NumberWithUnit) -> Attr
+computeStrokeWidth f = StringAttr "stroke-width" (datumToStringWithUnit f)
+  
+computeStrokeOpacity :: (Datum -> Number) -> Attr
+computeStrokeOpacity = NumberAttr "stroke-opacity"
 
-computeX :: (Datum -> Number) -> DomUnit -> Attr
-computeX f u = StringAttr "x" (\n -> show (f n) <> show u)
+computeRadius :: (Datum -> NumberWithUnit) -> Attr
+computeRadius f = StringAttr "r" (datumToStringWithUnit f)
 
-y :: Number -> DomUnit -> Attr
-y n u = StaticString "y" $ show n <> show u
+computeX :: (Datum -> NumberWithUnit) -> Attr
+computeX f = StringAttr "x" (datumToStringWithUnit f)
 
-computeY :: (Datum -> Number) -> Attr
-computeY = NumberAttr "y"
+computeY :: (Datum -> NumberWithUnit) -> Attr
+computeY f = StringAttr "y" (datumToStringWithUnit f)
 
-dx :: String -> Attr
-dx = StaticString "dx"
+computeDX :: (Datum -> NumberWithUnit) -> Attr
+computeDX f = StringAttr "dx" (datumToStringWithUnit f)
 
-computeDX :: (Datum -> String) -> Attr
-computeDX = StringAttr "dx"
-
-dy :: Number -> DomUnit -> Attr
-dy n u = StaticString "dy" $ show n <> show u
-
-computeDY :: (Datum -> Number) -> DomUnit -> Attr
-computeDY f u = StringAttr "dy" (\n -> show (f n) <> show u)
+computeDY :: (Datum -> NumberWithUnit) -> Attr
+computeDY f = StringAttr "dy" (datumToStringWithUnit f)
 
 data LineJoin = Arcs | Bevel | Miter | MiterClip | Round
 instance showLineJoin :: Show LineJoin where
@@ -124,17 +149,25 @@ transform fs = StringAttr "transform" (\d -> showTransform d)
 
 -- |              Show instance etc
 
+bracket :: Array String -> String
+bracket ss = "(" <> 
+  (intercalate "," ss)
+  <> ")"
+
+prefix :: String -> String
+prefix s = "\n.attr" <> s
+
 enQuote :: String -> String
 enQuote string = "\"" <> string <> "\""
 
 instance showAttribute :: Show Attr where
-  show (StaticString a v) = "\n.attr(\"" <> a <> "\", \"" <> v <> "\")"
-  show (StaticNumber a v) = "\n.attr(\"" <> a <> "\", \"" <> show v <> "\")"
-  show (StaticArrayNumber a v) = "\n.attr(\"" <> a <> "\", \"" <> show v <> "\")"
-  show (StringAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
-  show (TextAttr fn) = "\n.attr(\"" <> "Text" <> "\", <\\d -> result>)"
-  show (NumberAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
-  show (ArrayNumberAttr a fn) = "\n.attr(\"" <> a <> "\", <\\d -> result>)"
-  show (StringAttrI a fn) = "\n.attr(\"" <> a <> "\", <\\d i -> result>)"
-  show (NumberAttrI a fn) = "\n.attr(\"" <> a <> "\", <\\d i -> result>)"
-  show (ArrayNumberAttrI a fn) = "\n.attr(\"" <> a <> "\", <\\d i -> result>)"
+  show (StaticString a v)      = prefix $ bracket $ [ enQuote a,  enQuote v]
+  show (StaticNumber a v)      = prefix $ bracket $ [ enQuote a, enQuote $ show v ]
+  show (StaticArrayNumber a v) = prefix $ bracket $ [ enQuote a, enQuote $ show v ] 
+  show (TextAttr fn)           = prefix $ bracket $ [ enQuote "Text", "<\\d -> result>" ]
+  show (StringAttr a fn)       = prefix $ bracket $ [ enQuote a, "<\\d -> result>" ]
+  show (NumberAttr a fn)       = prefix $ bracket $ [ enQuote a, "<\\d -> result>" ]
+  show (ArrayNumberAttr a fn)  = prefix $ bracket $ [ enQuote a, "<\\d -> result>" ]
+  show (StringAttrI a fn)      = prefix $ bracket $ [ enQuote a, "<\\d i -> result>" ]
+  show (NumberAttrI a fn)      = prefix $ bracket $ [ enQuote a, "<\\d i -> result>" ]
+  show (ArrayNumberAttrI a fn) = prefix $ bracket $ [ enQuote a, "<\\d i -> result>" ]

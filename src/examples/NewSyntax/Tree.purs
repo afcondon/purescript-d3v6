@@ -115,7 +115,7 @@ chart (Tuple width height) =
             group [] 
               [ Path <-> modelLinks $ 
                   nameSelection "link" $
-                    path_ [ strokeWidth 1.5
+                    path_ [ strokeWidth $ Px 1.5
                           , strokeColor "#555"
                           , strokeOpacity 0.4
                           , fill "none"
@@ -126,21 +126,21 @@ chart (Tuple width height) =
           , group []
             [ Circle <-> modelDescendants $
                 nameSelection "node" $
-                  circle_ [ radius 2.5
+                  circle_ [ radius $ Px 2.5
                           , computeFill (\d -> if hasChildren d then "#555" else "#999")
                           , transform [ rotateCommon, translate ]
                           ]
             ]
           , group 
               [ fontFamily "sans-serif"
-              , fontSize 10.0
+              , fontSize $ Pt 10.0
               , strokeLineJoin Round
-              , strokeWidth 3.0 ]
+              , strokeWidth $ Px 3.0 ]
               [ Text <-> modelDescendants $
                   nameSelection "text" $
                     text_ [ transform [ rotateCommon, translate, rotateText2]
-                          , dy 0.31 Em
-                          , computeX labelOffset Px
+                          , dy $ Em 0.31
+                          , computeX labelOffset
                           , computeTextAnchor textOffset
                           , computeText (\d -> (d3TreeNode d).data.name) 
                           -- TODO add clone step later 
@@ -152,11 +152,11 @@ chart (Tuple width height) =
 
 
 
-labelOffset :: Datum -> Number
+labelOffset :: Datum -> NumberWithUnit
 labelOffset d =
   if ((d3TreeNode d).x < pi) == (hasChildren d)
-  then 6.0
-  else -6.0
+  then Px  6.0
+  else Px (-6.0)
 
 textOffset :: Datum -> String
 textOffset d =
