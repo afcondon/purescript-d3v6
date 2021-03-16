@@ -33,7 +33,7 @@ data Selection model =
     , children     :: Array (Selection model)
   }
   -- d3.selectAll().data().join() pattern
-  | Join Element (Selection model) (Selection model) (Selection model) (Maybe (Projection model))
+  | Join String Element (Selection model) (Selection model) (Selection model) (Maybe (Projection model))
   
   | Transition {
       label        :: Maybe String
@@ -76,11 +76,12 @@ modifySelection name b = RunTimeSelection name b
  
 join :: forall model. 
      Projection model -- projection function to present only the appropriate data to this join
+  -> String
   -> Element
   -> EnterUpdateExit model 
   -> Selection model
-join projection element (EnterUpdateExit selections) = 
-  Join element
+join projection name element (EnterUpdateExit selections) = 
+  Join name element
        (selections.enter element)
        (selections.update element)
        (selections.exit element)

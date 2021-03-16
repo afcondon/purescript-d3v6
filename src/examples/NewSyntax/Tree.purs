@@ -9,7 +9,7 @@ module NewSyntax.Tree (
 import D3.Base
 
 import Affjax (Error)
-import D3.Base.Attributes (LineJoin(..), strokeLineJoin, transform)
+import D3.Base.Attributes (LineJoin(..), strokeLineJoin, toString, transform)
 import D3.Layout.Trees (radialLink)
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..))
@@ -60,11 +60,11 @@ chart (Tuple width height) =
     -- same translation for both text and node
     translate d = "translate(" <> show (d3TreeNode d).y <> ",0)"
 
-    labelOffset :: Datum -> NumberWithUnit
-    labelOffset d =
+    labelOffset :: Datum -> Number
+    labelOffset d = 
       if ((d3TreeNode d).x < pi) == hasChildren d
-      then Px  6.0
-      else Px (-6.0)
+      then 6.0
+      else (-6.0)
 
     textOffset :: Datum -> String
     textOffset d =
@@ -76,9 +76,9 @@ chart (Tuple width height) =
       selectInDOM "div#tree" [] $ [
         svg [ viewBox origin.x origin.y width height ] [
           group_
-            [ join linkData Path $
+            [ join linkData "link" Path $
               enter $ withAttributes -- TODO combine as enterWithAttributes?? need to see how it looks with update exit, children etc
-                [ strokeWidth $ Px 1.5
+                [ strokeWidth 1.5 Px 
                 , strokeColor "#555"
                 , strokeOpacity 0.4
                 , fill "none"
@@ -87,23 +87,23 @@ chart (Tuple width height) =
             ]
           
         , group_
-          [ join descendentsData Circle $
+          [ join descendentsData "node" Circle $
             enter $ withAttributes
-              [ radius $ Px 2.5
+              [ radius 2.5 Px
               , computeFill (\d -> if hasChildren d then "#555" else "#999")
               , transform [ rotateCommon, translate ]
               ]
           ]
 
         , group [ fontFamily "sans-serif"
-                , fontSize $ Pt 10.0
+                , fontSize 10.0 Pt
                 , strokeLineJoin Round
-                , strokeWidth $ Px 3.0 ]
-            [ join descendentsData Text $
+                , strokeWidth 3.0 Px ]
+            [ join descendentsData "label" Text $
               enter $ withAttributes
                 [ transform [ rotateCommon, translate, rotateText2]
-                , dy $ Em 0.31
-                , computeX labelOffset
+                , dy 0.31 Em
+                , computeX Px labelOffset -- TODO this expression is clumsy
                 , computeTextAnchor textOffset
                 , computeText (\d -> (d3TreeNode d).data.name) 
                 -- TODO add clone step later 

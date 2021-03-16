@@ -26,41 +26,34 @@ data Attr =
 -- so in our DSL we will just make it one and hide that fact
   | TextAttr        (Datum -> String)
 
-data NumberWithUnit = Em Number | Px Number | Rem Number | Percent Number | Pt Number | NoUnit Number
+data NumberUnit = Em | Px | Rem | Percent | Pt | NoUnit
 
 -- prettier definitions for attributes
 -- TODO we're not doing anything to check / constrain the semantics of the units here, but it would be good to do so (type-level machinery?)
 -- TODO do we need more units like "1fr" etc for grids etc? 
 
--- | Note that in practice any number that has units is really encoding as a string, but that's how JavaScript do
-instance showNumberWithUnit :: Show NumberWithUnit where
-  show = 
-    case _ of
-      (Em n)      -> show n <> "em"
-      (Px n)      -> show n <> "px"
-      (Rem n)     -> show n <> "rem"
-      (Percent n) -> show n <> "%"
-      (Pt n)      -> show n <> "pt"
-      (NoUnit n)  -> show n  
+toString :: Number -> NumberUnit -> String
+toString n = 
+  case _ of
+    Em      -> show n <> "em"
+    Px      -> show n <> "px"
+    Rem     -> show n <> "rem"
+    Percent -> show n <> "%"
+    Pt      -> show n <> "pt"
+    NoUnit  -> show n  
 
-staticNumberAttrWithUnits :: String -> NumberWithUnit -> Attr
-staticNumberAttrWithUnits label n = StaticString label (show n)
+staticNumberAttrWithUnits :: String -> Number -> NumberUnit -> Attr
+staticNumberAttrWithUnits label n u = StaticString label (toString n u)
 
-datumToStringWithUnit :: (Datum -> NumberWithUnit) -> (Datum -> String)
-datumToStringWithUnit f = (\d -> show $ f d )
+datumToStringWithUnit :: NumberUnit -> (Datum -> Number) -> (Datum -> String)
+datumToStringWithUnit u f = (\d -> toString (f d) u )
 
 -- | static versions of attribute setters, where all selected elements will be given the same value for this attribute
 strokeColor :: String -> Attr
 strokeColor = StaticString "stroke"
 
-strokeWidth :: NumberWithUnit -> Attr
-strokeWidth = staticNumberAttrWithUnits "stroke-width"
-
 strokeOpacity :: Number -> Attr
 strokeOpacity = StaticNumber "stroke-opacity"
-
-radius :: NumberWithUnit -> Attr
-radius = staticNumberAttrWithUnits "r"
 
 fill :: String -> Attr
 fill = StaticString "fill"
@@ -74,26 +67,32 @@ fontFamily = StaticString "font-family"
 textAnchor :: String -> Attr
 textAnchor = StaticString "text-anchor"
 
-fontSize :: NumberWithUnit -> Attr
-fontSize = staticNumberAttrWithUnits "font-size"
+strokeWidth :: Number -> NumberUnit -> Attr
+strokeWidth n u = staticNumberAttrWithUnits "stroke-width" n u
 
-width :: NumberWithUnit -> Attr
-width = staticNumberAttrWithUnits "width"
+radius :: Number -> NumberUnit -> Attr
+radius n u = staticNumberAttrWithUnits "r" n u
 
-height :: NumberWithUnit -> Attr
-height = staticNumberAttrWithUnits "height"
+fontSize :: Number -> NumberUnit -> Attr
+fontSize n u = staticNumberAttrWithUnits "font-size" n u
 
-x :: NumberWithUnit -> Attr
-x = staticNumberAttrWithUnits "x"
+width :: Number -> NumberUnit -> Attr
+width n u = staticNumberAttrWithUnits "width" n u
 
-y :: NumberWithUnit -> Attr
-y = staticNumberAttrWithUnits "y"
+height :: Number -> NumberUnit -> Attr
+height n u = staticNumberAttrWithUnits "height" n u
 
-dx :: NumberWithUnit -> Attr
-dx = staticNumberAttrWithUnits "dx"
+x :: Number -> NumberUnit -> Attr
+x n u = staticNumberAttrWithUnits "x" n u
 
-dy :: NumberWithUnit -> Attr
-dy = staticNumberAttrWithUnits "dy"
+y :: Number -> NumberUnit -> Attr
+y n u = staticNumberAttrWithUnits "y" n u
+
+dx :: Number -> NumberUnit -> Attr
+dx n u = staticNumberAttrWithUnits "dx" n u
+
+dy :: Number -> NumberUnit -> Attr
+dy n u = staticNumberAttrWithUnits "dy" n u
 
 -- | computed versions of attribute setters, which need a function because the attribute is determined by the datum
 computeStrokeColor :: (Datum -> String) -> Attr
@@ -108,26 +107,26 @@ computeText = TextAttr
 computeTextAnchor :: (Datum -> String) -> Attr
 computeTextAnchor = StringAttr "text-anchor"
 
-computeStrokeWidth :: (Datum -> NumberWithUnit) -> Attr
-computeStrokeWidth f = StringAttr "stroke-width" (datumToStringWithUnit f)
+computeStrokeWidth :: NumberUnit -> (Datum -> Number) -> Attr
+computeStrokeWidth u f = StringAttr "stroke-width" (datumToStringWithUnit u f)
   
 computeStrokeOpacity :: (Datum -> Number) -> Attr
 computeStrokeOpacity = NumberAttr "stroke-opacity"
 
-computeRadius :: (Datum -> NumberWithUnit) -> Attr
-computeRadius f = StringAttr "r" (datumToStringWithUnit f)
+computeRadius :: NumberUnit -> (Datum -> Number) -> Attr
+computeRadius u f = StringAttr "r" (datumToStringWithUnit u f)
 
-computeX :: (Datum -> NumberWithUnit) -> Attr
-computeX f = StringAttr "x" (datumToStringWithUnit f)
+computeX :: NumberUnit -> (Datum -> Number) -> Attr
+computeX u f = StringAttr "x" (datumToStringWithUnit u f)
 
-computeY :: (Datum -> NumberWithUnit) -> Attr
-computeY f = StringAttr "y" (datumToStringWithUnit f)
+computeY :: NumberUnit -> (Datum -> Number) -> Attr
+computeY u f = StringAttr "y" (datumToStringWithUnit u f)
 
-computeDX :: (Datum -> NumberWithUnit) -> Attr
-computeDX f = StringAttr "dx" (datumToStringWithUnit f)
+computeDX :: NumberUnit -> (Datum -> Number) -> Attr
+computeDX u f = StringAttr "dx" (datumToStringWithUnit u f)
 
-computeDY :: (Datum -> NumberWithUnit) -> Attr
-computeDY f = StringAttr "dy" (datumToStringWithUnit f)
+computeDY :: NumberUnit -> (Datum -> Number) -> Attr
+computeDY u f = StringAttr "dy" (datumToStringWithUnit u f)
 
 data LineJoin = Arcs | Bevel | Miter | MiterClip | Round
 instance showLineJoin :: Show LineJoin where

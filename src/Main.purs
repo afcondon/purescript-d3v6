@@ -11,7 +11,7 @@ import D3.Interpreter (D3State(..), initialScope, interpretDrag, interpretSelect
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
 import Data.Int (toNumber)
-import Data.String.CodeUnits (toCharArray)
+-- import Data.String.CodeUnits (toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
