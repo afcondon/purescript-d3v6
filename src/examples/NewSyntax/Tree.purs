@@ -76,8 +76,8 @@ chart (Tuple width height) =
       selectInDOM "div#tree" [] $ [
         svg [ viewBox origin.x origin.y width height ] [
           group_
-            [ join linkData Path $ enter $ 
-              withAttributes
+            [ join linkData Path $
+              enter $ withAttributes -- TODO combine as enterWithAttributes?? need to see how it looks with update exit, children etc
                 [ strokeWidth $ Px 1.5
                 , strokeColor "#555"
                 , strokeOpacity 0.4
@@ -87,8 +87,8 @@ chart (Tuple width height) =
             ]
           
         , group_
-          [ join descendentsData Circle $ enter $
-            withAttributes
+          [ join descendentsData Circle $
+            enter $ withAttributes
               [ radius $ Px 2.5
               , computeFill (\d -> if hasChildren d then "#555" else "#999")
               , transform [ rotateCommon, translate ]
@@ -99,8 +99,8 @@ chart (Tuple width height) =
                 , fontSize $ Pt 10.0
                 , strokeLineJoin Round
                 , strokeWidth $ Px 3.0 ]
-            [ join descendentsData Text $ enter $
-              withAttributes
+            [ join descendentsData Text $
+              enter $ withAttributes
                 [ transform [ rotateCommon, translate, rotateText2]
                 , dy $ Em 0.31
                 , computeX labelOffset

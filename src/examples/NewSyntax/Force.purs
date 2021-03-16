@@ -19,7 +19,6 @@ import Unsafe.Coerce (unsafeCoerce)
 -- this is the model used by this particular "chart" (ie force layout simulation)
 type Model = { links :: Array GraphLink, nodes :: Array GraphNode }
 
--- minimal definition for now, need to factor in things added by simulation such as Vx, Vy
 type GraphNode = SimulationNodeRow { group :: Number }
 type GraphLink = { id :: ID, source :: ID, target :: ID, value :: Number }
 
@@ -27,71 +26,41 @@ type GraphLink = { id :: ID, source :: ID, target :: ID, value :: Number }
 -- after the GraphLink type has been bound in D3 it is changed to the following
 type D3GraphLink = { id :: ID, source :: GraphNode, target :: GraphNode, value :: Number }
 
+-- Projection functions to get subModels out of the Model for sub-selections
+modelLinks :: Projection Model
+modelLinks model = unsafeCoerce model.links
+
+modelNodes :: Projection Model
+modelNodes model = unsafeCoerce model.nodes
+
+
 -- | definition of the force layout, resulting Selection is run by Interpreter
 chart :: Tuple Number Number -> Selection Model
 chart (Tuple width height) = 
-  nameSelection "forceLayout" $
     selectInDOM "div#force" [] [
-      nameSelection "svg" $
         svg [ viewBox 0.0 0.0 width height ] [
-        group 
-          [ strokeColor "#999"
-          , strokeOpacity 0.6 ] 
-          [ Line ==> modelLinks $  -- "link" Selection used by name in tick function
-              nameSelection "link" $
-                line_ [ computeStrokeWidth (\d -> Px $ sqrt (d3Link d).value) ]
-          ]
-          
-        , group 
-            [ strokeColor "#fff"
-            , strokeOpacity 1.5 ]
-            [ Circle ==> modelNodes $ 
-              nameSelection "node" $ -- "node" Selection used by name in tick function
-                circle_ [ radius $ Px 5.0, computeFill colorByGroup]
+          group 
+            [ strokeColor "#999"
+            , strokeOpacity 0.6 ] 
+            [ join modelLinks Line $ enter $ -- "link" Selection used by name in tick function
+                withAttributes [ computeStrokeWidth (\d -> Px $ sqrt (d3Link d).value) ]
             ]
-        ]
-    ]
-
-
--- another way of writing 'chart' above, showing how Selections can be composed
-chartComposed :: Tuple Number Number -> Selection Model
-chartComposed (Tuple width height) = 
-  nameSelection "forceLayout" $
-    selectInDOM "div#force" 
-      [] 
-      [ nameSelection "svg" $
-          svg 
-            [ viewBox 0.0 0.0 width height ] 
-            [ group
-              [ strokeColor "#999"
-              , strokeOpacity 0.6 ] 
-              
-              [ Line ==> modelLinks $ linkEnter "link" ] -- "link" Selection used by name in tick function
             
-            , group
-                [ strokeColor "#fff"
-                , strokeOpacity 1.5 ]
-
-                [ Circle ==> modelNodes $ nodeEnter "node" ] -- "node" Selection used by name in tick function
-            ]
-      ]
-
-linkEnter :: String -> Selection Model
-linkEnter label = 
-  nameSelection label $
-    line_ [ computeStrokeWidth (\d -> Px $ sqrt (d3Link d).value) ]
-
-nodeEnter :: String -> Selection Model
-nodeEnter label = 
-  nameSelection label $
-    circle_ [ radius (Px 5.0), computeFill colorByGroup ]
+          , group 
+              [ strokeColor "#fff"
+              , strokeOpacity 1.5 ]
+              [ join modelNodes Circle $ enter $ -- "node" Selection used by name in tick function
+                  withAttributes [ radius $ Px 5.0, computeFill colorByGroup]
+              ]
+          ]
+    ]
 
 
 -- | definition of the particular Simulation that we are going to run
 simulation :: Simulation
 simulation =
   Simulation { 
-      label: "simulation"
+      label: "simulation" -- TODO stringy label
     , config: defaultConfigSimulation
     , forces: [ Force "charge" ForceMany, centerForce 800.0 900.0 ] 
     , nodes: []
@@ -115,14 +84,6 @@ myTickMap = fromFoldable
   ]
 
 -- | utility functions and boilerplate
-
--- Projection functions to get subModels out of the Model for sub-selections
-modelLinks :: Model -> SubModel
-modelLinks model = unsafeCoerce model.links
-
-modelNodes :: Model -> SubModel
-modelNodes model = unsafeCoerce model.nodes
-
 
 myDrag :: DragBehavior
 myDrag = DefaultDrag "node" "simulation"

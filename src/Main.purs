@@ -18,7 +18,7 @@ import Effect.Aff (launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import NewSyntax.Force as Force
-import NewSyntax.GUP as GUP
+-- import NewSyntax.GUP as GUP
 import NewSyntax.Tree as Tree
 import Web.HTML (window)
 import Web.HTML.Window (innerHeight, innerWidth)
@@ -65,11 +65,11 @@ main = launchAff_ do -- Aff
                          runStateT (interpretSelection treeChart) (Context treeModel treeScope) *> pure unit
 
   -- then the General Update Pattern example
-  let lettersChart = GUP.chartInit widthHeight'
-  let letters1     = GUP.makeModel $ toCharArray "abcdefghijklmnopqrstuvwxyz"
-  let letters2     = GUP.makeModel $ toCharArray "acefghiklnpqrtuwyz"
-  let lettersScope = initialScope
-  (Tuple a s) <- liftEffect $ runStateT (interpretSelection lettersChart) (Context letters1 lettersScope)
+  -- let lettersChart = GUP.chartInit widthHeight'
+  -- let letters1     = GUP.makeModel $ toCharArray "abcdefghijklmnopqrstuvwxyz"
+  -- let letters2     = GUP.makeModel $ toCharArray "acefghiklnpqrtuwyz"
+  -- let lettersScope = initialScope
+  -- (Tuple a s) <- liftEffect $ runStateT (interpretSelection lettersChart) (Context letters1 lettersScope)
   -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate
   -- and we really want the NativeSelection to be passed in via scope, right?
   -- _ <- liftEffect $ runStateT (interpretSelection GUP.chartUpdate ) (Context letters2 lettersScope)
