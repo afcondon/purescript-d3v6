@@ -33,10 +33,8 @@ data Selection model =
     , children     :: Array (Selection model)
   }
   -- d3.selectAll().data().join() pattern
-  | Join {
-      projection      :: Maybe (Projection model) -- function that can extract submodel for subselection
-    , enterUpdateExit :: EnterUpdateExit model
-  }
+  | Join Element (Selection model) (Selection model) (Selection model) (Maybe (Projection model))
+  
   | Transition {
       label        :: Maybe String
     , duration     :: Number
@@ -47,22 +45,11 @@ data Selection model =
   | RunTimeSelection String (Selection model)
   | NullSelection -- used for optional Join functions
 
-type EnterUpdateExit model = {
-    enter  :: Selection model
-  , update :: Selection model
-  , exit   :: Selection model
+data EnterUpdateExit model = EnterUpdateExit {
+    enter  :: Element -> Selection model
+  , update :: Element -> Selection model
+  , exit   :: Element -> Selection model
 }
-
-nameSelection :: forall model. Label -> Selection model -> Selection model
-nameSelection label = 
-  case _ of 
-    (InitialSelect s) -> InitialSelect $ s { label = Just label }
-    (Append s)        -> Append $ s { label = Just label }
-    (Transition t)    -> Transition $ t { label = Just label }
-    (Join j)          -> Join j
-    NullSelection     -> NullSelection
-    -- TODO exception if renaming attempted
-    (RunTimeSelection n s) -> RunTimeSelection n s -- no renaming allowed
 
 selectInDOM :: forall model. Selector -> Array Attr -> Array (Selection model) -> Selection model 
 selectInDOM selector attributes children = 
@@ -89,24 +76,44 @@ modifySelection name b = RunTimeSelection name b
  
 join :: forall model. 
      Projection model -- projection function to present only the appropriate data to this join
-  -> EnterUpdateExit model
+  -> Element
+  -> EnterUpdateExit model 
   -> Selection model
-join projection eue = 
-  Join { projection: Just projection, enterUpdateExit: eue }
+join projection element (EnterUpdateExit selections) = 
+  Join element
+       (selections.enter element)
+       (selections.update element)
+       (selections.exit element)
+       (Just projection)
  
 infixl 1 join  as ==>
 
-enter :: forall model. Selection model -> EnterUpdateExit model
-enter s = { enter: s, update: NullSelection, exit: NullSelection }
+withAttributes :: forall model. Array Attr -> Element -> Selection model
+withAttributes attrs = \e -> append_ e attrs
+                            
+enter :: forall model. 
+  (Element -> Selection model) ->
+  EnterUpdateExit model
+enter s = EnterUpdateExit { enter: s, update: \_ -> NullSelection, exit: \_ -> NullSelection }
 
-enterUpdate :: forall model. Selection model -> Selection model -> EnterUpdateExit model
-enterUpdate s u = { enter: s, update: u, exit: NullSelection }
+enterUpdate :: forall model. 
+  (Element -> Selection model) ->
+  (Element -> Selection model) ->
+  EnterUpdateExit model
+enterUpdate s u = EnterUpdateExit { enter: s, update: u, exit: \_ -> NullSelection }
 
-enterExit :: forall model. Selection model -> Selection model -> EnterUpdateExit model
-enterExit s e = { enter: s, update: NullSelection, exit: e }
+enterExit :: forall model. 
+  (Element -> Selection model) ->
+  (Element -> Selection model) -> 
+  EnterUpdateExit model
+enterExit s e = EnterUpdateExit { enter: s, update: \_ -> NullSelection, exit: e }
 
-enterUpdateExit :: forall model. Selection model -> Selection model -> Selection model -> EnterUpdateExit model
-enterUpdateExit s u e = { enter: s, update: u, exit: NullSelection }
+enterUpdateExit :: forall model. 
+  (Element -> Selection model) ->
+  (Element -> Selection model) ->
+  (Element -> Selection model) -> 
+  EnterUpdateExit model
+enterUpdateExit s u e = EnterUpdateExit { enter: s, update: u, exit: e }
 
 -- TODO rewrite the show instance once Selection ADT settles down
 -- |              Show instance etc

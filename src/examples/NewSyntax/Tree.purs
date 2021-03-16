@@ -76,43 +76,41 @@ chart (Tuple width height) =
       selectInDOM "div#tree" [] $ [
         svg [ viewBox origin.x origin.y width height ] [
           group_
-            [ linkData ==>
-              (enter $ path_
+            [ join linkData Path $ enter $ 
+              withAttributes
                 [ strokeWidth $ Px 1.5
                 , strokeColor "#555"
                 , strokeOpacity 0.4
                 , fill "none"
                 , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
-                ])
+                ]
             ]
           
         , group_
-          [ descendentsData ==> 
-            (enter $ circle_
+          [ join descendentsData Circle $ enter $
+            withAttributes
               [ radius $ Px 2.5
               , computeFill (\d -> if hasChildren d then "#555" else "#999")
               , transform [ rotateCommon, translate ]
-              ])
+              ]
           ]
 
         , group [ fontFamily "sans-serif"
                 , fontSize $ Pt 10.0
                 , strokeLineJoin Round
                 , strokeWidth $ Px 3.0 ]
-            [ descendentsData ==> 
-              (enter $ text_
+            [ join descendentsData Text $ enter $
+              withAttributes
                 [ transform [ rotateCommon, translate, rotateText2]
                 , dy $ Em 0.31
                 , computeX labelOffset
                 , computeTextAnchor textOffset
                 , computeText (\d -> (d3TreeNode d).data.name) 
                 -- TODO add clone step later 
-                ])
+                ]
           ]
         ]
       ]
-
-
 
 -- | TODO All this stuff belongs eventually in the d3 base
 data Tree a = Node a (Array (Tree a))
