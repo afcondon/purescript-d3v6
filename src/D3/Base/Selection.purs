@@ -34,8 +34,7 @@ data Selection model =
   }
   -- d3.selectAll().data().join() pattern
   | Join {
-      projection   :: Maybe (Projection model) -- function that can extract submodel for subselection
-    , element      :: Element -- has to agree with the Element in enter/update/exit
+      projection      :: Maybe (Projection model) -- function that can extract submodel for subselection
     , enterUpdateExit :: EnterUpdateExit model
   }
   | Transition {
@@ -87,41 +86,27 @@ extendSelection s1 s2 =
 
 modifySelection :: forall model. String -> Selection model -> Selection model
 modifySelection name b = RunTimeSelection name b
-
-joinAllData :: forall model. 
-     Element
-  -> EnterUpdateExit model -- minimal definition requires only enter
-  -> Selection model
-joinAllData element enterUpdateExit = 
-  Join { projection: Nothing, element, enterUpdateExit }
-
-simpleJoinAllData :: forall model. 
-     Element
-  -> Selection model -- minimal definition requires only enter
-  -> Selection model
-simpleJoinAllData element enter = 
-  Join { projection: Nothing, element, enterUpdateExit: { enter, update: NullSelection, exit: NullSelection } }
  
-joinToSubset :: forall model. 
-     Element
-  -> Projection model-- projection function to present only the appropriate data to this join
-  -> EnterUpdateExit model -- minimal definition requires only enter
+join :: forall model. 
+     Projection model -- projection function to present only the appropriate data to this join
+  -> EnterUpdateExit model
   -> Selection model
-joinToSubset element projection enterUpdateExit = 
-  Join { projection: Just projection, element, enterUpdateExit }
-
-simpleJoinSubSet:: forall model. 
-     Element
-  -> Projection model -- projection function to present only the appropriate data to this join
-  -> Selection model  -- minimal definition requires only enter
-  -> Selection model
-simpleJoinSubSet element projection enter = 
-  Join { projection: Just projection, element, enterUpdateExit: { enter, update: NullSelection, exit: NullSelection } }
+join projection eue = 
+  Join { projection: Just projection, enterUpdateExit: eue }
  
-infixl 1 joinAllData       as <-+->
-infixl 1 simpleJoinAllData as <--->
-infixl 1 joinToSubset      as <-/\->
-infixl 1 simpleJoinSubSet  as <->
+infixl 1 join  as ==>
+
+enter :: forall model. Selection model -> EnterUpdateExit model
+enter s = { enter: s, update: NullSelection, exit: NullSelection }
+
+enterUpdate :: forall model. Selection model -> Selection model -> EnterUpdateExit model
+enterUpdate s u = { enter: s, update: u, exit: NullSelection }
+
+enterExit :: forall model. Selection model -> Selection model -> EnterUpdateExit model
+enterExit s e = { enter: s, update: NullSelection, exit: e }
+
+enterUpdateExit :: forall model. Selection model -> Selection model -> Selection model -> EnterUpdateExit model
+enterUpdateExit s u e = { enter: s, update: u, exit: NullSelection }
 
 -- TODO rewrite the show instance once Selection ADT settles down
 -- |              Show instance etc

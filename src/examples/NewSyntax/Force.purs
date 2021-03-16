@@ -37,7 +37,7 @@ chart (Tuple width height) =
         group 
           [ strokeColor "#999"
           , strokeOpacity 0.6 ] 
-          [ Line <-> modelLinks $  -- "link" Selection used by name in tick function
+          [ Line ==> modelLinks $  -- "link" Selection used by name in tick function
               nameSelection "link" $
                 line_ [ computeStrokeWidth (\d -> Px $ sqrt (d3Link d).value) ]
           ]
@@ -45,7 +45,7 @@ chart (Tuple width height) =
         , group 
             [ strokeColor "#fff"
             , strokeOpacity 1.5 ]
-            [ Circle <-> modelNodes $ 
+            [ Circle ==> modelNodes $ 
               nameSelection "node" $ -- "node" Selection used by name in tick function
                 circle_ [ radius $ Px 5.0, computeFill colorByGroup]
             ]
@@ -66,13 +66,13 @@ chartComposed (Tuple width height) =
               [ strokeColor "#999"
               , strokeOpacity 0.6 ] 
               
-              [ Line <-> modelLinks $ linkEnter "link" ] -- "link" Selection used by name in tick function
+              [ Line ==> modelLinks $ linkEnter "link" ] -- "link" Selection used by name in tick function
             
             , group
                 [ strokeColor "#fff"
                 , strokeOpacity 1.5 ]
 
-                [ Circle <-> modelNodes $ nodeEnter "node" ] -- "node" Selection used by name in tick function
+                [ Circle ==> modelNodes $ nodeEnter "node" ] -- "node" Selection used by name in tick function
             ]
       ]
 
