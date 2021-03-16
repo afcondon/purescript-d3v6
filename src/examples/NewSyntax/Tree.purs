@@ -81,10 +81,17 @@ makeModel width json = Model { json, d3Tree, config }
     config           = radialTreeConfig width
     hierarchicalData = d3Hierarchy json
     d3Tree           = d3InitTree config hierarchicalData
-  
-readModelFromFileContents :: forall r. Tuple Number Number -> Either Error { body ∷ String | r } -> Either Error (Model String)
-readModelFromFileContents (Tuple width _) (Right { body } ) = Right $ makeModel width (readJSONJS body)
-readModelFromFileContents _               (Left error)      = Left error
+
+-- Projection functions to get subModels out of the Model for sub-selections
+foreign import d3HierarchyLinks :: D3Tree -> SubModel
+foreign import d3HierarchyDescendants :: D3Tree -> SubModel
+
+modelLinks :: forall m. Model m -> SubModel
+modelLinks (Model m) = d3HierarchyLinks m.d3Tree
+
+modelDescendants :: forall m. Model m -> SubModel
+modelDescendants (Model m) = d3HierarchyDescendants m.d3Tree
+
 
 -- we give the chart our Model type but behind the scenes it is mutated by D3 and additionally
 -- which projection of the "Model" is active in each Join varies so we can't have both strong
@@ -107,70 +114,63 @@ chart (Tuple width height) =
                                   else "0" <> ")"
     -- same translation for both text and node
     translate d = "translate(" <> show (d3TreeNode d).y <> ",0)"
+
+    labelOffset :: Datum -> NumberWithUnit
+    labelOffset d =
+      if ((d3TreeNode d).x < pi) == hasChildren d
+      then Px  6.0
+      else Px (-6.0)
+
+    textOffset :: Datum -> String
+    textOffset d =
+      if ((d3TreeNode d).x < pi) == hasChildren d
+      then "start"
+      else "end"
+
   in
-    nameSelection "treeLayout" $
       selectInDOM "div#tree" [] $ [
-        nameSelection "svg" $
-          svg [ viewBox origin.x origin.y width height ] [
-            group [] 
-              [ Path <-> modelLinks $ 
-                  nameSelection "link" $
-                    path_ [ strokeWidth $ Px 1.5
-                          , strokeColor "#555"
-                          , strokeOpacity 0.4
-                          , fill "none"
-                          , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
-                          ]
-              ]
-              
-          , group []
-            [ Circle <-> modelDescendants $
-                nameSelection "node" $
-                  circle_ [ radius $ Px 2.5
-                          , computeFill (\d -> if hasChildren d then "#555" else "#999")
-                          , transform [ rotateCommon, translate ]
-                          ]
+        svg [ viewBox origin.x origin.y width height ] [
+          group [] 
+            [ Path <-> modelLinks $ 
+              path_ [ strokeWidth $ Px 1.5
+                    , strokeColor "#555"
+                    , strokeOpacity 0.4
+                    , fill "none"
+                    , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
+                    ]
             ]
-          , group 
-              [ fontFamily "sans-serif"
-              , fontSize $ Pt 10.0
-              , strokeLineJoin Round
-              , strokeWidth $ Px 3.0 ]
-              [ Text <-> modelDescendants $
-                  nameSelection "text" $
-                    text_ [ transform [ rotateCommon, translate, rotateText2]
-                          , dy $ Em 0.31
-                          , computeX labelOffset
-                          , computeTextAnchor textOffset
-                          , computeText (\d -> (d3TreeNode d).data.name) 
-                          -- TODO add clone step later 
-                          ]
-              ]
+          
+        , group []
+          [ Circle <-> modelDescendants $
+              circle_ [ radius $ Px 2.5
+                      , computeFill (\d -> if hasChildren d then "#555" else "#999")
+                      , transform [ rotateCommon, translate ]
+                      ]
           ]
+        , group 
+            [ fontFamily "sans-serif"
+            , fontSize $ Pt 10.0
+            , strokeLineJoin Round
+            , strokeWidth $ Px 3.0 ]
+            [ Text <-> modelDescendants $
+                text_ [ transform [ rotateCommon, translate, rotateText2]
+                      , dy $ Em 0.31
+                      , computeX labelOffset
+                      , computeTextAnchor textOffset
+                      , computeText (\d -> (d3TreeNode d).data.name) 
+                      -- TODO add clone step later 
+                      ]
+          ]
+        ]
       ]
 
 
 
 
-labelOffset :: Datum -> NumberWithUnit
-labelOffset d =
-  if ((d3TreeNode d).x < pi) == (hasChildren d)
-  then Px  6.0
-  else Px (-6.0)
 
-textOffset :: Datum -> String
-textOffset d =
-  if ((d3TreeNode d).x < pi) == (hasChildren d)
-  then "start"
-  else "end"
 
--- Projection functions to get subModels out of the Model for sub-selections
-foreign import d3HierarchyLinks :: D3Tree -> SubModel
-foreign import d3HierarchyDescendants :: D3Tree -> SubModel
-
-modelLinks :: forall m. Model m -> SubModel
-modelLinks (Model m) = d3HierarchyLinks m.d3Tree
-
-modelDescendants :: forall m. Model m -> SubModel
-modelDescendants (Model m) = d3HierarchyDescendants m.d3Tree
+-- TODO read file elsewhere and pass it in
+readModelFromFileContents :: forall r. Tuple Number Number -> Either Error { body ∷ String | r } -> Either Error (Model String)
+readModelFromFileContents (Tuple width _) (Right { body } ) = Right $ makeModel width (readJSONJS body)
+readModelFromFileContents _               (Left error)      = Left error
 
