@@ -39,14 +39,17 @@ go activeSelection selection = do
       traverse_ (go appendSelection) (reverse r.children)
       pure appendSelection
 
-    (Join r) -> do
+    (Join element enter update exit (Just projection)) -> do
       (Context model scope) <- get
       let 
-        joinSelection = 
-          case r.projection of
-            Nothing  -> unsafeCoerce model -- if there is no projection then model === submodel
-            (Just p) -> d3JoinJS activeSelection (show r.element) (spy "submodel" $ p model)
-      enterSelection  <- go joinSelection r.enterUpdateExit.enter
+        joinSelection = d3JoinJS activeSelection (show element) (projection model)
+      enterSelection  <- go joinSelection enter
+      pure joinSelection
+    (Join element enter update exit Nothing) -> do
+      (Context model scope) <- get
+      let 
+        joinSelection = d3JoinJS activeSelection (show element) (unsafeCoerce model) -- unsafeCoerce here is effectively "identity"
+      enterSelection  <- go joinSelection enter
       -- updateSelection <- go joinSelection r.update
       -- exitSelection   <- go joinSelection r.exit
       -- need to get the enter, update and exit lined up and pass them all at once?
