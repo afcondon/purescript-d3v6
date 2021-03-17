@@ -7,7 +7,7 @@ import Affjax (printError)
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.State (StateT, runStateT)
 import D3.Base (Selection)
-import D3.Interpreter (D3State(..), initialState, interpretDrag, interpretSelection, interpretSimulation, interpretTickMap, startSimulation)
+import D3.Interpreter (D3State(..), initialState, interpretDrag, runInitial, runUpdate, interpretSimulation, interpretTickMap, startSimulation)
 import D3.Interpreter.Types (updateState)
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
@@ -34,7 +34,7 @@ getWindowWidthHeight = do
 forceInterpreter :: Selection Force.Model -> StateT (D3State Force.Model) Effect Unit
 forceInterpreter forceChart = do
   simulation <- interpretSimulation Force.simulation Force.getNodes Force.getLinks Force.makeModel
-  _ <- interpretSelection forceChart
+  _ <- runInitial forceChart
   interpretTickMap simulation Force.myTickMap
   interpretDrag Force.myDrag
   startSimulation simulation
@@ -66,7 +66,7 @@ main = launchAff_ do -- Aff
     (Left error) -> liftEffect $ log $ printError error
 
     (Right treeModel) -> liftEffect $ 
-                         runStateT (interpretSelection treeChart) (initialState treeModel) *> pure unit
+                         runStateT (runInitial treeChart) (initialState treeModel) *> pure unit
 
   -- then the General Update Pattern example
   log "General Update Pattern example"
@@ -75,9 +75,9 @@ main = launchAff_ do -- Aff
   let letters2     = toCharArray "acefghiklnpqrtuwyz"
 
   (Tuple _ s) <- liftEffect $ 
-                 runStateT (interpretSelection lettersChart) (initialState letters1)
-  _           <- liftEffect $
-                 runStateT (interpretSelection lettersChart) (updateState letters2 s)
+                 runStateT (runInitial lettersChart) (initialState letters1)
+  -- _           <- liftEffect $
+  --                runStateT (runInitial lettersChart) (updateState letters2 s)
   -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate
   -- and we really want the NativeSelection to be passed in via scope, right?
   -- _ <- liftEffect $ runStateT (interpretSelection GUP.chartUpdate ) (Context letters2 lettersScope)

@@ -21,10 +21,11 @@ exports.d3SelectAllJS = selector => d3.selectAll(selector)
 // :: NativeSelection -> String -> NativeSelection
 exports.d3AppendElementJS = selection => element => selection.append(element)
 // :: forall d. d -> NativeSelection
-exports.d3JoinJS = selection => element => data => selection.selectAll(element).data(data).enter()
-// could we get the join.enter, join.update, join.exit selections out of this in order to simply 
-// attach the append normally later??
-exports.d3JoinWithIndexJS = selection => data => idFunction => selection.data(data, idFunction)
+exports.d3EnterJS = selection => element => data => selection.selectAll(element).data(data).enter()
+exports.d3UpdateJS = selection => element => data => selection.selectAll(element).data(data).update()
+exports.d3ExitJS = selection => element => data => selection.selectAll(element).data(data).exit()
+
+exports.d3EnterWithIndexJS = selection => data => idFunction => selection.data(data, idFunction)
 // :: NativeSelection
 exports.nullSelectionJS = null // NB only used on init, maybe still a bad idea
 

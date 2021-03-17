@@ -103,6 +103,10 @@ join_ name element (EnterUpdateExit selections) =
  
 infixl 1 join  as ==>
 
+-- TODO NB this is a conscious limitation compared to D3 and should be fixed later
+-- essentially in order to force enter-update-exit to all refer to the same element type
+-- we are making the unwarranted assumption that there is ONLY that element at this point
+-- whereas in D3 it's a selection at this point which can be a whole subtree
 withAttributes :: forall model. Array Attr -> Element -> Selection model
 withAttributes attrs = \e -> append_ e attrs
                             
