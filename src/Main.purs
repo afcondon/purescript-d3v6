@@ -8,6 +8,7 @@ import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.State (StateT, runStateT)
 import D3.Base (Selection)
 import D3.Interpreter (D3State(..), initialState, interpretDrag, interpretSelection, interpretSimulation, interpretTickMap, startSimulation)
+import D3.Interpreter.Types (updateState)
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
 import Data.Int (toNumber)
@@ -73,8 +74,10 @@ main = launchAff_ do -- Aff
   let letters1     = toCharArray "abcdefghijklmnopqrstuvwxyz"
   let letters2     = toCharArray "acefghiklnpqrtuwyz"
 
-  (Tuple a s) <- liftEffect $ 
+  (Tuple _ s) <- liftEffect $ 
                  runStateT (interpretSelection lettersChart) (initialState letters1)
+  _           <- liftEffect $
+                 runStateT (interpretSelection lettersChart) (updateState letters2 s)
   -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate
   -- and we really want the NativeSelection to be passed in via scope, right?
   -- _ <- liftEffect $ runStateT (interpretSelection GUP.chartUpdate ) (Context letters2 lettersScope)
