@@ -15,7 +15,7 @@ import Data.Int (toNumber)
 import Data.String.CodeUnits (toCharArray)
 import Data.Tuple (Tuple(..))
 import Effect (Effect)
-import Effect.Aff (launchAff_)
+import Effect.Aff (Milliseconds(..), delay, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Class.Console (log)
 import NewSyntax.Force as Force
@@ -76,8 +76,11 @@ main = launchAff_ do -- Aff
 
   (Tuple _ s) <- liftEffect $ 
                  runStateT (runInitial lettersChart) (initialState letters1)
-  -- _           <- liftEffect $
-  --                runStateT (runInitial lettersChart) (updateState letters2 s)
+
+  _           <- delay $ Milliseconds 2000.0
+
+  _           <- liftEffect $
+                 runStateT (runInitial lettersChart) (updateState letters2 s)
   -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate
   -- and we really want the NativeSelection to be passed in via scope, right?
   -- _ <- liftEffect $ runStateT (interpretSelection GUP.chartUpdate ) (Context letters2 lettersScope)
