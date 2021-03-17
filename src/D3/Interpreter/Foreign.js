@@ -6,8 +6,12 @@
 exports.runSimpleAttrJS = selection => attr => value => selection.attr(attr, value)
 // :: forall f. NativeSelection -> String -> f -> Unit
 exports.runDatumAttrJS = selection => attr => f => selection.attr(attr, f)
+
+// NB the (d,i) => f(d)(i) in runDatumIndexAttrJS - the attribute-setter
+// function is not curried, since it’s been written on the PureScript side
+
 // :: forall f. NativeSelection -> String -> f -> Unit
-exports.runDatumIndexAttrJS = selection => attr => f => selection.attr(attr, d => i => f(d)(i))
+exports.runDatumIndexAttrJS = selection => attr => f => selection.attr(attr, (d,i) => f(d)(i))
 // foreign import runDatumTextJS      :: forall f. NativeSelection           -> f -> Unit
 exports.runDatumTextJS = selection => f => selection.text(f)
 

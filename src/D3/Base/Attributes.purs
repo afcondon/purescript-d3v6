@@ -48,6 +48,9 @@ staticNumberAttrWithUnits label n u = StaticString label (toString n u)
 datumToStringWithUnit :: NumberUnit -> (Datum -> Number) -> (Datum -> String)
 datumToStringWithUnit u f = (\d -> toString (f d) u )
 
+datumAndIndexToStringWithUnit :: NumberUnit -> (Datum -> Number -> Number) -> (Datum -> Number -> String)
+datumAndIndexToStringWithUnit u f = (\d i -> toString (f d i) u )
+
 -- | static versions of attribute setters, where all selected elements will be given the same value for this attribute
 strokeColor :: String -> Attr
 strokeColor = StaticString "stroke"
@@ -127,6 +130,13 @@ computeDX u f = StringAttr "dx" (datumToStringWithUnit u f)
 
 computeDY :: NumberUnit -> (Datum -> Number) -> Attr
 computeDY u f = StringAttr "dy" (datumToStringWithUnit u f)
+
+-- TODO refactor all these functions that differ only in attr "string" when finished
+computeXusingIndex :: NumberUnit -> (Datum -> Number -> Number) -> Attr
+computeXusingIndex u f = StringAttrI "x" (datumAndIndexToStringWithUnit u f)
+
+computeYusingIndex :: NumberUnit -> (Datum -> Number -> Number) -> Attr
+computeYusingIndex u f = StringAttrI "y" (datumAndIndexToStringWithUnit u f)
 
 data LineJoin = Arcs | Bevel | Miter | MiterClip | Round
 instance showLineJoin :: Show LineJoin where

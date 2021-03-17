@@ -38,7 +38,7 @@ go activeSelection selection = do
                             d3AppendElementJS activeSelection (show r.element)
       updateScope appendSelection r.label
       traverse_ (applyAttr appendSelection) r.attributes
-      traverse_ (go appendSelection) (reverse r.children)
+      traverse_ (go appendSelection) (reverse r.children) -- TODO why reverse children here?
       pure appendSelection
 
     (Join name element enter update exit (Just projection)) -> do
