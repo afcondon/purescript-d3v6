@@ -8,7 +8,10 @@ import Effect (Effect)
 -- we model the scope of the JavaScript "script" like this (see README for rationale)
 data D3State model   = Context model (Map String NativeSelection)
 
-initialScope :: Map String NativeSelection
-initialScope = empty
+-- initialScope :: Map String NativeSelection
+-- initialScope = empty
+
+initialState :: forall model. model -> D3State model
+initialState model = Context model empty
 
 type D3 model t      = StateT(D3State model) Effect t

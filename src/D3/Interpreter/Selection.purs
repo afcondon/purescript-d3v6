@@ -26,14 +26,16 @@ go :: forall model. NativeSelection -> Selection model -> D3 model NativeSelecti
 go activeSelection selection = do 
   case selection of
     (InitialSelect r) -> do
-      let root = spy "selectInDOM" $ d3SelectAllJS r.selector
+      let root = spy "selectInDOM" $ 
+                 d3SelectAllJS r.selector
       updateScope root r.label
       traverse_ (applyAttr root) r.attributes
       traverse_ (go root) r.children
       pure root
           
     (Append r) -> do
-      let appendSelection = spy "Append" d3AppendElementJS activeSelection (show r.element)
+      let appendSelection = spy "Append" $ 
+                            d3AppendElementJS activeSelection (show r.element)
       updateScope appendSelection r.label
       traverse_ (applyAttr appendSelection) r.attributes
       traverse_ (go appendSelection) (reverse r.children)
@@ -42,14 +44,16 @@ go activeSelection selection = do
     (Join name element enter update exit (Just projection)) -> do
       (Context model scope) <- get
       let 
-        joinSelection = d3JoinJS activeSelection (show element) (projection model)
+        joinSelection = spy "Join with projection: " $
+                        d3JoinJS activeSelection (show element) (spy "submodel: " $ projection model)
       enterSelection  <- go joinSelection enter
       updateScope enterSelection (Just name)
       pure joinSelection
     (Join name element enter update exit Nothing) -> do
       (Context model scope) <- get
       let 
-        joinSelection = d3JoinJS activeSelection (show element) (unsafeCoerce model) -- unsafeCoerce here is effectively "identity"
+        joinSelection = spy "Join without projecting: " $
+                        d3JoinJS activeSelection (show element) (spy "model" $ unsafeCoerce model) -- unsafeCoerce here is effectively "identity"
       enterSelection  <- go joinSelection enter
       updateScope enterSelection (Just name)
       -- updateSelection <- go joinSelection r.update

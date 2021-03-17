@@ -86,6 +86,20 @@ join projection name element (EnterUpdateExit selections) =
        (selections.update element)
        (selections.exit element)
        (Just projection)
+
+-- version without projection function (more correctly projection = identity)
+-- TODO rename join and join_
+join_ :: forall model. 
+     String
+  -> Element
+  -> EnterUpdateExit model 
+  -> Selection model
+join_ name element (EnterUpdateExit selections) = 
+  Join name element
+       (selections.enter element)
+       (selections.update element)
+       (selections.exit element)
+       Nothing
  
 infixl 1 join  as ==>
 
@@ -98,23 +112,26 @@ enter :: forall model.
 enter s = EnterUpdateExit { enter: s, update: \_ -> NullSelection, exit: \_ -> NullSelection }
 
 enterUpdate :: forall model. 
-  (Element -> Selection model) ->
-  (Element -> Selection model) ->
+  { enter  :: (Element -> Selection model)
+  , update :: (Element -> Selection model)
+  } ->
   EnterUpdateExit model
-enterUpdate s u = EnterUpdateExit { enter: s, update: u, exit: \_ -> NullSelection }
+enterUpdate eux = EnterUpdateExit { enter: eux.enter, update: eux.update, exit: \_ -> NullSelection }
 
 enterExit :: forall model. 
-  (Element -> Selection model) ->
-  (Element -> Selection model) -> 
+  { enter  :: (Element -> Selection model)
+  , exit   :: (Element -> Selection model)
+  } ->
   EnterUpdateExit model
-enterExit s e = EnterUpdateExit { enter: s, update: \_ -> NullSelection, exit: e }
+enterExit eux = EnterUpdateExit { enter: eux.enter, update: \_ -> NullSelection, exit: eux.exit }
 
 enterUpdateExit :: forall model. 
-  (Element -> Selection model) ->
-  (Element -> Selection model) ->
-  (Element -> Selection model) -> 
+  { enter  :: (Element -> Selection model)
+  , update :: (Element -> Selection model)
+  , exit   :: (Element -> Selection model)
+  } ->
   EnterUpdateExit model
-enterUpdateExit s u e = EnterUpdateExit { enter: s, update: u, exit: e }
+enterUpdateExit eux = EnterUpdateExit { enter: eux.enter, update: eux.update, exit: eux.exit }
 
 -- TODO rewrite the show instance once Selection ADT settles down
 -- |              Show instance etc
