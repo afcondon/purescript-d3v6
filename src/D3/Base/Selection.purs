@@ -9,7 +9,7 @@ import Data.Array (singleton)
 
 type Label = String
 type Selector = String
-data Element = Svg | Group | Div | Line | Circle | Path | Text
+data Element = Svg | Group | Div | Line | Circle | Path | Text | Table | Td | Tr
 
 type Projection model = model -> SubModel
 
@@ -74,13 +74,13 @@ extendSelection s1 s2 =
 modifySelection :: forall model. String -> Selection model -> Selection model
 modifySelection name b = RunTimeSelection name b
  
-join :: forall model. 
+joinElement :: forall model. 
      Projection model -- projection function to present only the appropriate data to this join
   -> String
   -> Element
   -> EnterUpdateExit model 
   -> Selection model
-join projection name element (EnterUpdateExit selections) = 
+joinElement projection name element (EnterUpdateExit selections) = 
   Join name element
        (selections.enter element)
        (selections.update element)
@@ -88,13 +88,13 @@ join projection name element (EnterUpdateExit selections) =
        (Just projection)
 
 -- version without projection function (more correctly projection = identity)
--- TODO rename join and join_
-join_ :: forall model. 
+-- TODO rename join and joinElement_
+joinElement_ :: forall model. 
      String
   -> Element
   -> EnterUpdateExit model 
   -> Selection model
-join_ name element (EnterUpdateExit selections) = 
+joinElement_ name element (EnterUpdateExit selections) = 
   Join name element
        (selections.enter element)
        (selections.update element)
@@ -103,12 +103,15 @@ join_ name element (EnterUpdateExit selections) =
  
 infixl 1 join  as ==>
 
--- TODO NB this is a conscious limitation compared to D3 and should be fixed later
--- essentially in order to force enter-update-exit to all refer to the same element type
--- we are making the unwarranted assumption that there is ONLY that element at this point
--- whereas in D3 it's a selection at this point which can be a whole subtree
+-- -- TODO NB this is a conscious limitation compared to D3 and should be fixed later
+-- -- essentially in order to force enter-update-exit to all refer to the same element type
+-- -- we are making the unwarranted assumption that there is ONLY that element at this point
+-- -- whereas in D3 it's a selection at this point which can be a whole subtree
 withAttributes :: forall model. Array Attr -> Element -> Selection model
 withAttributes attrs = \e -> append_ e attrs
+
+withoutAttributes :: forall model. Element -> Selection model
+withoutAttributes = withAttributes []
                             
 enter :: forall model. 
   (Element -> Selection model) ->
@@ -167,3 +170,6 @@ instance showElement :: Show Element where
   show Circle = "circle"
   show Path   = "path"
   show Text   = "text"
+  show Table  = "table"
+  show Td     = "td"
+  show Tr     = "tr"

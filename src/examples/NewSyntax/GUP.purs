@@ -7,7 +7,7 @@ import Unsafe.Coerce (unsafeCoerce)
 
 -- with such simple data and simple data viz, the data in the DOM will be exactly same as Model data
 -- this means that a simple coerce suffices to turn Datum -> D3DOMelement and also that no Projection
--- function is required, hence the use of join_ 
+-- function is required, hence the use of joinElement_ 
 type D3DOMelement = Char
 
 type Model a = Array a
@@ -19,7 +19,7 @@ chartInit (Tuple width height) = do
   selectInDOM "div#GUP" [] [-- this is an InitialSelect
     svg 
       [ viewBox origin.x origin.y width height ]
-      [ join_ "gup" Text $
+      [ joinElement_ "gup" Text $
         enterUpdateExit {
           enter: withAttributes [ fill "green"
                                 , y (-30.0) Px
