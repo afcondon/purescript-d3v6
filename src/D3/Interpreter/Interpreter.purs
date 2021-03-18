@@ -6,5 +6,5 @@ module D3.Interpreter (
 
 import D3.Interpreter.Types (D3, D3State(..), initialState)
 import D3.Interpreter.Layouts.Simulation (addAttrFnToTick, getNativeSelection, interpretDrag, interpretForce, interpretSimulation, interpretTickMap, startSimulation, stopSimulation)
-import D3.Interpreter.Selection (go, runInitial, runUpdate, updateScope)
+import D3.Interpreter.Selection
 

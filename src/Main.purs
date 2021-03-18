@@ -7,7 +7,7 @@ import Affjax (printError)
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.State (StateT, runStateT)
 import D3.Base (Selection)
-import D3.Interpreter (D3State(..), initialState, interpretDrag, runInitial, runUpdate, interpretSimulation, interpretTickMap, startSimulation)
+import D3.Interpreter (D3State(..), initialState, interpretDrag, runInitial, interpretSimulation, interpretTickMap, startSimulation)
 import D3.Interpreter.Types (updateState)
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
@@ -79,8 +79,8 @@ main = launchAff_ do -- Aff
 
   _           <- delay $ Milliseconds 2000.0
 
-  _           <- liftEffect $
-                 runStateT (runInitial lettersChart) (updateState letters2 s)
+  -- _           <- liftEffect $
+  --                runStateT (runInitial lettersChart) (updateState letters2 s)
   -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate
   -- and we really want the NativeSelection to be passed in via scope, right?
   -- _ <- liftEffect $ runStateT (interpretSelection GUP.chartUpdate ) (Context letters2 lettersScope)
