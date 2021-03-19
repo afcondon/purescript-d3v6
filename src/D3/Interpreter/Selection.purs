@@ -1,7 +1,7 @@
 module D3.Interpreter.Selection where
 
 import Control.Monad.State (get, modify_)
-import D3.Base (NativeSelection, Selection(..))
+import D3.Base (Element(..), NativeSelection, Selection(..))
 import D3.Interpreter.Attributes (applyAttr)
 import D3.Interpreter.Foreign (d3AppendElementJS, d3JoinJS, d3SelectAllJS, nullSelectionJS)
 import D3.Interpreter.Types (D3, D3State(..))
@@ -10,6 +10,7 @@ import Data.Foldable (traverse_)
 import Data.Map (insert)
 import Data.Maybe (Maybe(..))
 import Debug.Trace (spy)
+import Effect.Console (log)
 import Prelude (Unit, bind, discard, pure, show, unit, ($))
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -38,16 +39,34 @@ run activeSelection selection = do
       traverse_ (run appendSelection) (reverse r.children) -- TODO why reverse children here?
       pure appendSelection
 
-    (Join { element, projection, selections}) -> do
+    (Join { element, projection, selections }) -> do
       (Context model scope) <- get
       let 
+        enterFunction :: forall model. Selection model -> NativeSelection -> D3 model NativeSelection
+        enterFunction selection nativeSelection = run nativeSelection (Append { attributes: [], children: [], element: Text })
+          where
+            _ = log "callback from join enter"
+
+        updateFunction :: forall model. Maybe (Selection model) -> NativeSelection -> D3 model NativeSelection
+        updateFunction selection nativeSelection = run nativeSelection (Update { attributes: [], children: [] })
+          where
+            _ = log "callback from join update"
+
+        exitFunction :: forall model. Maybe (Selection model) -> NativeSelection -> D3 model NativeSelection
+        exitFunction selection nativeSelection = run nativeSelection (Exit { attributes: [], children: [] })
+          where
+            _ = log "callback from join exit"
         dataForJoin = 
           case projection of
             Nothing   -> unsafeCoerce model
             (Just fn) -> fn model
-        joinSelection = spy "Join1 with projection: " $
+
+        joinSelection = spy "Join: " $
                         d3JoinJS activeSelection (show element) (spy "submodel: " dataForJoin)
-                          { enter: (\ns -> ns), update: (\ns -> ns), exit: (\ns -> ns) }
+                          { enter: enterFunction selections.enter
+                          , update: updateFunction selections.update
+                          , exit: exitFunction selections.exit }
+
       pure joinSelection
 
 
@@ -64,6 +83,7 @@ run activeSelection selection = do
 
     NullSelection  -> do
       pure activeSelection
+
 
 
 updateScope :: forall model. NativeSelection -> Maybe String -> D3 model Unit
