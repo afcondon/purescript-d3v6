@@ -20,125 +20,121 @@ type Projection model = model -> SubModel
 -- | between Selection/Transition
 data Selection model = 
     InitialSelect {
-      label        :: Maybe String -- root should have a label so that we have a key for it in the map, but we will add it with nameSelection fn
-    , selector     :: String
+      selector     :: String
     , attributes   :: Array Attr
     , children     :: Array (Selection model)
     }
   -- d3.selectAll, initial selection, possibly labelled so that it can be used elsewhere
   | Append {
-      label        :: Maybe String
-    , element      :: Element
-    , attributes   :: Array Attr
+      element      :: Element
     , children     :: Array (Selection model)
-  }
-  -- d3.selectAll().data().join() pattern
-  | Join String Element (Selection model) (Selection model) (Selection model) (Maybe (Projection model))
-  
-  | Transition {
-      label        :: Maybe String
-    , duration     :: Number
     , attributes   :: Array Attr
   }
+    
+  | Join { -- enter with option update and/or exit enter will append the element, exit will terminate with remove
+        element    :: Element
+      , selections :: { enter      :: Selection model
+                      , update     :: Selection model
+                      , exit       :: Selection model }
+      , projection :: Maybe (Projection model)
+  }
+  
   -- placeholder for a selection that isn't determined til runtime
   -- and which must be looked up 
   | RunTimeSelection String (Selection model)
   | NullSelection -- used for optional Join functions
 
-data EnterUpdateExit model = EnterUpdateExit {
-    enter  :: Element -> Selection model
-  , update :: Element -> Selection model
-  , exit   :: Element -> Selection model
-}
-
 selectInDOM :: forall model. Selector -> Array Attr -> Array (Selection model) -> Selection model 
 selectInDOM selector attributes children = 
-  InitialSelect { label: Nothing, selector, attributes, children }
+  InitialSelect { selector, attributes, children }
 
 append :: forall model.        Element              -> Array Attr -> Array (Selection model) -> Selection model 
 append element attributes children = 
-  Append { label: Nothing, element, attributes, children }
+  Append { element, attributes, children }
 
 append_ :: forall model.       Element              -> Array Attr                            -> Selection model 
 append_ element attributes = 
-  Append { label: Nothing, element, attributes, children: [] }
-
--- add a Selection to the children field of another selection
--- only works on Append selections for now
-extendSelection :: forall model. Selection model -> Selection model -> Selection model
-extendSelection s1 s2 = 
-  case s1 of
-    (Append a) -> Append a { children = singleton s2 <> a.children}
-    otherwise -> s1 -- TODO for now we'll just do nothing in other cases
+  Append { element, attributes, children: [] }
 
 modifySelection :: forall model. String -> Selection model -> Selection model
 modifySelection name b = RunTimeSelection name b
  
-joinElement :: forall model. 
-     Projection model -- projection function to present only the appropriate data to this join
-  -> String
-  -> Element
-  -> EnterUpdateExit model 
-  -> Selection model
-joinElement projection name element (EnterUpdateExit selections) = 
-  Join name element
-       (selections.enter element)
-       (selections.update element)
-       (selections.exit element)
-       (Just projection)
+-- underlying function for all the enter variations
+join :: forall model.
+  Element ->
+  Maybe (Projection model) -> -- projection function to present only the appropriate data to this join
+  { enter  :: OnJoin model, update :: OnJoin model, exit :: OnJoin model } ->
+  Selection model
+join element projection protoSelections = 
+  Join { element
+       , selections: makeJoinSelections element protoSelections
+       , projection }
+        
+joinEnter :: forall model. Element -> Projection model -> OnJoin model -> Selection model
+joinEnter element projection enter =
+  join element (Just projection) { enter, update: NoUpdate, exit: NoExit }
 
--- version without projection function (more correctly projection = identity)
--- TODO rename join and joinElement_
-joinElement_ :: forall model. 
-     String
-  -> Element
-  -> EnterUpdateExit model 
-  -> Selection model
-joinElement_ name element (EnterUpdateExit selections) = 
-  Join name element
-       (selections.enter element)
-       (selections.update element)
-       (selections.exit element)
-       Nothing
- 
-infixl 1 join  as ==>
+joinEnterAndUpdate :: forall model. Element -> Projection model -> OnJoin model -> OnJoin model -> Selection model
+joinEnterAndUpdate element projection enter update =
+  join element (Just projection) { enter, update, exit: NoExit }
 
--- -- TODO NB this is a conscious limitation compared to D3 and should be fixed later
--- -- essentially in order to force enter-update-exit to all refer to the same element type
--- -- we are making the unwarranted assumption that there is ONLY that element at this point
--- -- whereas in D3 it's a selection at this point which can be a whole subtree
-withAttributes :: forall model. Array Attr -> Element -> Selection model
-withAttributes attrs = \e -> append_ e attrs
+joinEnterAndExit :: forall model. Element -> Projection model -> OnJoin model -> OnJoin model -> Selection model
+joinEnterAndExit element projection enter exit =
+  join element (Just projection) { enter, update: NoUpdate, exit }
 
-withoutAttributes :: forall model. Element -> Selection model
-withoutAttributes = withAttributes []
-                            
-enter :: forall model. 
-  (Element -> Selection model) ->
-  EnterUpdateExit model
-enter s = EnterUpdateExit { enter: s, update: \_ -> NullSelection, exit: \_ -> NullSelection }
+joinEnterUpdateExit :: forall model. Element -> Projection model -> OnJoin model -> OnJoin model -> OnJoin model -> Selection model
+joinEnterUpdateExit element projection enter update exit =
+  join element (Just projection) { enter, update, exit }
 
-enterUpdate :: forall model. 
-  { enter  :: (Element -> Selection model)
-  , update :: (Element -> Selection model)
-  } ->
-  EnterUpdateExit model
-enterUpdate eux = EnterUpdateExit { enter: eux.enter, update: eux.update, exit: \_ -> NullSelection }
+joinEnter_ :: forall model. Element -> OnJoin model -> Selection model
+joinEnter_ element enter =
+  join element Nothing { enter, update: NoUpdate, exit: NoExit }
 
-enterExit :: forall model. 
-  { enter  :: (Element -> Selection model)
-  , exit   :: (Element -> Selection model)
-  } ->
-  EnterUpdateExit model
-enterExit eux = EnterUpdateExit { enter: eux.enter, update: \_ -> NullSelection, exit: eux.exit }
+joinEnterAndUpdate_ :: forall model. Element -> OnJoin model -> OnJoin model -> Selection model
+joinEnterAndUpdate_ element enter update =
+  join element Nothing { enter, update, exit: NoExit }
 
-enterUpdateExit :: forall model. 
-  { enter  :: (Element -> Selection model)
-  , update :: (Element -> Selection model)
-  , exit   :: (Element -> Selection model)
-  } ->
-  EnterUpdateExit model
-enterUpdateExit eux = EnterUpdateExit { enter: eux.enter, update: eux.update, exit: eux.exit }
+joinEnterAndExit_ :: forall model. Element -> OnJoin model -> OnJoin model -> Selection model
+joinEnterAndExit_ element enter exit =
+  join element Nothing { enter, update: NoUpdate, exit }
+
+joinEnterUpdateExit_ :: forall model. Element -> OnJoin model -> OnJoin model -> OnJoin model -> Selection model
+joinEnterUpdateExit_ element enter update exit =
+  join element Nothing { enter, update, exit }
+
+
+data OnJoin model = -- essentially a Selection without Element
+    Enter         (Array Attr) (Array (Selection model))
+  | Update        (Array Attr) (Array (Selection model))
+  | Exit          (Array Attr) (Array (Selection model))
+  | EnterNoAttrs  (Array (Selection model))
+  | UpdateNoAttrs (Array (Selection model))
+  | ExitNoAttrs   (Array (Selection model))
+  | EnterAttrs    (Array Attr)
+  | UpdateAttrs   (Array Attr)
+  | ExitAttrs     (Array Attr)
+  | NoUpdate
+  | NoExit
+
+mkSelection :: forall model. Element -> OnJoin model -> Selection model
+mkSelection element = case _ of
+  (Enter attrs children)  -> append element attrs children -- TODO only enter is going to work here RN
+  (Update attrs children) -> append element attrs children -- we're NOT going to append here
+  (Exit attrs children)   -> append element attrs children -- and we're going to REMOVE here
+  (EnterAttrs attrs)      -> append_ element attrs -- TODO only enter is going to work here RN
+  (UpdateAttrs attrs)     -> append_ element attrs -- we're NOT going to append here
+  (ExitAttrs attrs)       -> append_ element attrs -- and we're going to REMOVE here
+  NoUpdate                -> NullSelection -- updates are optional
+  NoExit                  -> NullSelection -- exits are optional
+
+makeJoinSelections :: forall model. Element ->
+  { enter  :: OnJoin model,   update :: OnJoin model,    exit   :: OnJoin model } ->
+  { enter :: Selection model, update :: Selection model, exit :: Selection model }
+makeJoinSelections element protos = { enter, update, exit }
+  where
+    enter  = mkSelection element protos.enter
+    update = mkSelection element protos.update
+    exit   = mkSelection element protos.exit
 
 -- TODO rewrite the show instance once Selection ADT settles down
 -- |              Show instance etc

@@ -7,7 +7,7 @@ module D3.Base (
 ) where
 
 import D3.Base.Attributes 
-import D3.Base.Foreign (Datum, NativeSelection, Scale, SubModel, d3SchemeCategory10JS)
+import D3.Base.Foreign
 import D3.Base.Selection 
-import D3.Base.Element (circle, circle_, div, div_, group, group_, line, line_, path, path_, svg, svg_, text, text_)
-import D3.Base.Layout.Simulation (DragBehavior(..), Force(..), ForceType(..), ID, IdFn, Link, Node, Simulation(..), SimulationConfig, SimulationNodeRow, SimulationRecord, TickMap, defaultConfigSimulation)
+import D3.Base.Element 
+import D3.Base.Layout.Simulation 
