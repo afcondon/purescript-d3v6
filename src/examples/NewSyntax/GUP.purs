@@ -21,23 +21,23 @@ chartInit (Tuple width height) = do
   selectInDOM "div#GUP" [] [-- this is an InitialSelect
     svg 
       [ viewBox origin.x origin.y width height ]
-      [ enterUpdateExit_ 
-          Text
-          Enter_ [ fill "green"
-                  , y (-30.0) Px
-                  , computeXusingIndex Px xPosition
-                  , computeText (\d -> unsafeCoerce d )
-                  , transition t -- TODO maybe this can become proper selection child now?
-                  , y 0.0 Px ] 
-
-          Update_ [ fill "black",  y 0.0 Px
-                  , transition t
-                  , computeXusingIndex Px xPosition ]
-            
-          Exit_   [ fill "brown", y 30.0 Px
-                  , transition t
-                  , y 30.0 Px
-                  , remove ] -- this looks very much like a hack, to consider "remove" to be an "attribute", but :shrug
+      [ join $
+          EnterUpdateExit Text 
+            -- Enter
+            (Attrs  [ fill "green"
+                    , y (-30.0) Px
+                    , computeXusingIndex Px xPosition
+                    , computeText (\d -> unsafeCoerce d )
+                    -- , transition t -- TODO maybe this can become proper selection child now?
+                    , y 0.0 Px ]) 
+            -- Update
+            (Attrs  [ fill "black",  y 0.0 Px
+                    -- , transition t -- TODO make this a proper child later
+                    , computeXusingIndex Px xPosition ])
+            -- exit 
+            (Attrs  [ fill "brown", y 30.0 Px
+                    -- , transition t -- TODO make this a proper child later
+                    , y 30.0 Px ])
       ]    
   ] 
 

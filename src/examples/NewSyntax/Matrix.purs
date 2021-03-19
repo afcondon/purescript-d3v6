@@ -3,7 +3,7 @@ module NewSyntax.Matrix where
 import D3.Base 
 
 import Data.Tuple (Tuple(..))
-import Prelude 
+import Prelude hiding (join)
 import Unsafe.Coerce (unsafeCoerce)
 
 type D3DOMelement = Int
@@ -33,13 +33,10 @@ chartInit (Tuple width height) = do
   let origin = { x: -width / 2.0, y: -height / 2.0 }
 
   selectInDOM "div#matrix" [] [ 
-    table []             
-      [ joinEnter_ Td (
-          Enter [] [ 
-            joinEnter_ Tr (
-              EnterAttrs [ computeText (\d -> unsafeCoerce d) ] 
-            )
-          ]
-        )  
-      ]    
+    table []
+      [ join $ 
+          Enter Td $ Child $
+            join $
+              Enter Tr $ Attrs [ computeText (\d -> unsafeCoerce d) ]
+      ]
   ] 

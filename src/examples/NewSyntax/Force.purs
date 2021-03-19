@@ -42,15 +42,15 @@ chart (Tuple width height) =
           group 
             [ strokeColor "#999"
             , strokeOpacity 0.6 ] 
-            [ join modelLinks "link" Line $ enter $ -- "link" Selection used by name in tick function
-                withAttributes [ computeStrokeWidth Px $ (\d -> sqrt (d3Link d).value) ]
+            [ joinUsing modelLinks $
+                Enter Line $ Attrs [ computeStrokeWidth Px $ (\d -> sqrt (d3Link d).value) ]
             ]
           
         , group 
             [ strokeColor "#fff"
             , strokeOpacity 1.5 ]
-            [ join modelNodes "node" Circle $ enter $ -- "node" Selection used by name in tick function
-                withAttributes [ radius 5.0 Px, computeFill colorByGroup]
+            [ joinUsing modelNodes $ -- we need to name this selection for Drag tho
+                Enter Circle $ Attrs [ radius 5.0 Px, computeFill colorByGroup]
             ]
         ]
     ]

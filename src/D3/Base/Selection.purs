@@ -24,7 +24,7 @@ data Selection model =
     , attributes   :: Array Attr
     , children     :: Array (Selection model)
     }
-  -- d3.selectAll, initial selection, possibly labelled so that it can be used elsewhere
+
   | Append {
       element      :: Element
     , children     :: Array (Selection model)
@@ -34,10 +34,21 @@ data Selection model =
   | Join { -- enter with option update and/or exit enter will append the element, exit will terminate with remove
         element    :: Element
       , selections :: { enter      :: Selection model
-                      , update     :: Selection model
-                      , exit       :: Selection model }
+                      , update     :: Maybe (Selection model)   -- would have to be an Update 
+                      , exit       :: Maybe (Selection model) } -- would have to be an Exit
       , projection :: Maybe (Projection model)
   }
+
+  | Update {
+      children     :: Array (Selection model)
+    , attributes   :: Array Attr
+  }
+
+  | Exit {
+      children     :: Array (Selection model)
+    , attributes   :: Array Attr
+  }
+  -- TODO can Transition, Call, Clone and other things be part of Selection?
   
   -- placeholder for a selection that isn't determined til runtime
   -- and which must be looked up 
@@ -59,82 +70,92 @@ append_ element attributes =
 modifySelection :: forall model. String -> Selection model -> Selection model
 modifySelection name b = RunTimeSelection name b
  
+
+data JoinParameters model = 
+    AttrsAndChildren (Array Attr) (Array (Selection model))
+  | AttrsAndChild    (Array Attr)        (Selection model)
+  | Attrs            (Array Attr)
+  | Children                      (Array (Selection model))
+  | Child                                (Selection model)
+  
+data OnJoin model = 
+    Enter           Element (JoinParameters model) 
+  | EnterUpdate     Element (JoinParameters model) (JoinParameters model)
+  | EnterExit       Element (JoinParameters model) (JoinParameters model)
+  | EnterUpdateExit Element (JoinParameters model) (JoinParameters model) (JoinParameters model)
+
 -- underlying function for all the enter variations
-join :: forall model.
-  Element ->
-  Maybe (Projection model) -> -- projection function to present only the appropriate data to this join
-  { enter  :: OnJoin model, update :: OnJoin model, exit :: OnJoin model } ->
-  Selection model
-join element projection protoSelections = 
-  Join { element
-       , selections: makeJoinSelections element protoSelections
-       , projection }
-        
-joinEnter :: forall model. Element -> Projection model -> OnJoin model -> Selection model
-joinEnter element projection enter =
-  join element (Just projection) { enter, update: NoUpdate, exit: NoExit }
+join_ :: forall model. Maybe (Projection model) -> OnJoin model -> Selection model
+join_ projection =
+  case _ of 
+    (Enter element p) ->  
+      Join { element
+           , projection
+           , selections: { enter:  makeEnterSelection element p
+                         , update: Nothing
+                         , exit:   Nothing }
+      }
 
-joinEnterAndUpdate :: forall model. Element -> Projection model -> OnJoin model -> OnJoin model -> Selection model
-joinEnterAndUpdate element projection enter update =
-  join element (Just projection) { enter, update, exit: NoExit }
+    (EnterUpdate element pe pu) -> 
+      Join { element
+           , projection
+           , selections: { enter:  makeEnterSelection element pe
+                         , update: Just (makeUpdateSelection pu)
+                         , exit:   Nothing }
+      }
 
-joinEnterAndExit :: forall model. Element -> Projection model -> OnJoin model -> OnJoin model -> Selection model
-joinEnterAndExit element projection enter exit =
-  join element (Just projection) { enter, update: NoUpdate, exit }
+    (EnterExit element pe px) -> 
+      Join { element
+           , projection
+           , selections: { enter:  makeEnterSelection element pe
+                         , update: Nothing
+                         , exit:   Just (makeExitSelection px) }
+      }
 
-joinEnterUpdateExit :: forall model. Element -> Projection model -> OnJoin model -> OnJoin model -> OnJoin model -> Selection model
-joinEnterUpdateExit element projection enter update exit =
-  join element (Just projection) { enter, update, exit }
-
-joinEnter_ :: forall model. Element -> OnJoin model -> Selection model
-joinEnter_ element enter =
-  join element Nothing { enter, update: NoUpdate, exit: NoExit }
-
-joinEnterAndUpdate_ :: forall model. Element -> OnJoin model -> OnJoin model -> Selection model
-joinEnterAndUpdate_ element enter update =
-  join element Nothing { enter, update, exit: NoExit }
-
-joinEnterAndExit_ :: forall model. Element -> OnJoin model -> OnJoin model -> Selection model
-joinEnterAndExit_ element enter exit =
-  join element Nothing { enter, update: NoUpdate, exit }
-
-joinEnterUpdateExit_ :: forall model. Element -> OnJoin model -> OnJoin model -> OnJoin model -> Selection model
-joinEnterUpdateExit_ element enter update exit =
-  join element Nothing { enter, update, exit }
+    (EnterUpdateExit element pe pu px) -> 
+      Join { element
+           , projection
+           , selections: { enter:  makeEnterSelection element pe
+                         , update: Just (makeUpdateSelection pu)
+                         , exit:   Just (makeExitSelection px) }
+      }
 
 
-data OnJoin model = -- essentially a Selection without Element
-    Enter         (Array Attr) (Array (Selection model))
-  | Update        (Array Attr) (Array (Selection model))
-  | Exit          (Array Attr) (Array (Selection model))
-  | EnterNoAttrs  (Array (Selection model))
-  | UpdateNoAttrs (Array (Selection model))
-  | ExitNoAttrs   (Array (Selection model))
-  | EnterAttrs    (Array Attr)
-  | UpdateAttrs   (Array Attr)
-  | ExitAttrs     (Array Attr)
-  | NoUpdate
-  | NoExit
+join :: forall model. OnJoin model -> Selection model
+join onJoin = join_ Nothing onJoin
 
-mkSelection :: forall model. Element -> OnJoin model -> Selection model
-mkSelection element = case _ of
-  (Enter attrs children)  -> append element attrs children -- TODO only enter is going to work here RN
-  (Update attrs children) -> append element attrs children -- we're NOT going to append here
-  (Exit attrs children)   -> append element attrs children -- and we're going to REMOVE here
-  (EnterAttrs attrs)      -> append_ element attrs -- TODO only enter is going to work here RN
-  (UpdateAttrs attrs)     -> append_ element attrs -- we're NOT going to append here
-  (ExitAttrs attrs)       -> append_ element attrs -- and we're going to REMOVE here
-  NoUpdate                -> NullSelection -- updates are optional
-  NoExit                  -> NullSelection -- exits are optional
+joinUsing :: forall model. Projection model -> OnJoin model -> Selection model
+joinUsing projection onJoin = join_ (Just projection) onJoin
 
-makeJoinSelections :: forall model. Element ->
-  { enter  :: OnJoin model,   update :: OnJoin model,    exit   :: OnJoin model } ->
-  { enter :: Selection model, update :: Selection model, exit :: Selection model }
-makeJoinSelections element protos = { enter, update, exit }
-  where
-    enter  = mkSelection element protos.enter
-    update = mkSelection element protos.update
-    exit   = mkSelection element protos.exit
+makeEnterSelection :: forall model. Element -> JoinParameters model -> Selection model
+makeEnterSelection element =
+  case _ of
+    (AttrsAndChildren attributes children) -> Append { element, attributes, children }
+    (AttrsAndChild attributes child)       -> Append { element, attributes, children: [child] }
+    (Children children)                    -> Append { element, attributes: [], children }
+    (Child child)                          -> Append { element, attributes: [], children: [child] }
+    (Attrs attributes)                     -> Append { element, attributes, children: [] }
+
+makeUpdateSelection :: forall model. JoinParameters model -> Selection model
+makeUpdateSelection =
+  case _ of
+    (AttrsAndChildren attributes children) -> Update { attributes, children }
+    (AttrsAndChild attributes child)       -> Update { attributes, children: [child] }
+    (Children children)                    -> Update { attributes: [], children }
+    (Child child)                          -> Update { attributes: [], children: [child] }
+    (Attrs attributes)                     -> Update { attributes, children: [] }
+
+makeExitSelection :: forall model. JoinParameters model -> Selection model
+makeExitSelection =
+  case _ of
+    (AttrsAndChildren attributes children) -> Exit { attributes, children }
+    (AttrsAndChild attributes child)       -> Exit { attributes, children: [child] }
+    (Children children)                    -> Exit { attributes: [], children }
+    (Child child)                          -> Exit { attributes: [], children: [child] }
+    (Attrs attributes)                     -> Exit { attributes, children: [] }
+
+
+
 
 -- TODO rewrite the show instance once Selection ADT settles down
 -- |              Show instance etc

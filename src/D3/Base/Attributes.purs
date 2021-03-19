@@ -28,10 +28,10 @@ data Attr =
 -- Transition is also not an attribute in D3 but in this DSL it is
 -- TODO there may be real difficulties with this with the attributes that are inherited from Selection
 -- that's not clear right now
-  | Transition TransitionAttributes
+  -- | Transition TransitionAttributes
 
 -- many things that are attached to Transition in D3 will simply revert to Selection
-data TransitionAttributes = Duration | Filter | Remove -- nowhere close to exhaustive
+data TransitionAttributes = Duration Int | Filter | Remove -- nowhere close to exhaustive
 
 data NumberUnit = Em | Px | Rem | Percent | Pt | NoUnit
 
@@ -187,4 +187,4 @@ instance showAttribute :: Show Attr where
   show (StringAttrI a fn)      = prefix $ bracket $ [ enQuote a, "<\\d i -> result>" ]
   show (NumberAttrI a fn)      = prefix $ bracket $ [ enQuote a, "<\\d i -> result>" ]
   show (ArrayNumberAttrI a fn) = prefix $ bracket $ [ enQuote a, "<\\d i -> result>" ]
-  show (Transition attrs)      = "no proper show instance for Transition yet"
+  -- show (Transition attrs)      = "no proper show instance for Transition yet"

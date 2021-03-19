@@ -76,38 +76,38 @@ chart (Tuple width height) =
       selectInDOM "div#tree" [] $ [
         svg [ viewBox origin.x origin.y width height ] [
           group_
-            [ join linkData "link" Path $
-              enter $ withAttributes -- TODO combine as enterWithAttributes?? need to see how it looks with update exit, children etc
-                [ strokeWidth 1.5 Px 
-                , strokeColor "#555"
-                , strokeOpacity 0.4
-                , fill "none"
-                , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
+            [ joinUsing linkData $ 
+              Enter Path $ 
+                Attrs [ strokeWidth 1.5 Px 
+                      , strokeColor "#555"
+                      , strokeOpacity 0.4
+                      , fill "none"
+                      , radialLink (\d -> (d3TreeNode d).x) (\d -> (d3TreeNode d).y) 
                 ]
             ]
           
         , group_
-          [ join descendentsData "node" Circle $
-            enter $ withAttributes
-              [ radius 2.5 Px
-              , computeFill (\d -> if hasChildren d then "#555" else "#999")
-              , transform [ rotateCommon, translate ]
-              ]
+          [ joinUsing descendentsData $
+            Enter Circle $ 
+              Attrs [ radius 2.5 Px
+                    , computeFill (\d -> if hasChildren d then "#555" else "#999")
+                    , transform [ rotateCommon, translate ]
+                    ]
           ]
 
         , group [ fontFamily "sans-serif"
                 , fontSize 10.0 Pt
                 , strokeLineJoin Round
                 , strokeWidth 3.0 Px ]
-            [ join descendentsData "label" Text $
-              enter $ withAttributes
-                [ transform [ rotateCommon, translate, rotateText2]
-                , dy 0.31 Em
-                , computeX Px labelOffset -- TODO this expression is clumsy
-                , computeTextAnchor textOffset
-                , computeText (\d -> (d3TreeNode d).data.name) 
-                -- TODO add clone step later 
-                ]
+            [ joinUsing descendentsData $
+              Enter Text $
+                Attrs [ transform [ rotateCommon, translate, rotateText2]
+                      , dy 0.31 Em
+                      , computeX Px labelOffset -- TODO this expression is clumsy
+                      , computeTextAnchor textOffset
+                      , computeText (\d -> (d3TreeNode d).data.name) 
+                      -- TODO add clone step later, perhaps branch of Selection?
+                      ]
           ]
         ]
       ]

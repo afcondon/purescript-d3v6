@@ -3,31 +3,35 @@
 //            ATTR functions
 
 // :: NativeSelection -> String -> NativeJS -> Unit
-exports.runSimpleAttrJS = selection => attr => value => selection.attr(attr, value)
+exports.runSimpleAttrJS     = selection => attr => value => selection.attr(attr, value)
 // :: forall f. NativeSelection -> String -> f -> Unit
-exports.runDatumAttrJS = selection => attr => f => selection.attr(attr, f)
+exports.runDatumAttrJS      = selection => attr => f => selection.attr(attr, f)
 
-// NB the (d,i) => f(d)(i) in runDatumIndexAttrJS - the attribute-setter
+// NB the (d,i)             => f(d)(i) in runDatumIndexAttrJS - the attribute-setter
 // function is not curried, since it’s been written on the PureScript side
 
 // :: forall f. NativeSelection -> String -> f -> Unit
 exports.runDatumIndexAttrJS = selection => attr => f => selection.attr(attr, (d,i) => f(d)(i))
 // foreign import runDatumTextJS      :: forall f. NativeSelection           -> f -> Unit
-exports.runDatumTextJS = selection => f => selection.text(f)
+exports.runDatumTextJS      = selection => f => selection.text(f)
 
 //           SELECTION functions
 // :: String -> NativeSelection
-exports.d3SelectAllJS = selector => d3.selectAll(selector)
+exports.d3SelectAllJS       = selector => d3.selectAll(selector)
 // :: NativeSelection -> String -> NativeSelection
-exports.d3AppendElementJS = selection => element => selection.append(element)
+exports.d3AppendElementJS   = selection => element => selection.append(element)
 // :: forall d. d -> NativeSelection
-exports.d3EnterJS = selection => element => data => selection.selectAll(element).data(data).enter()
-exports.d3UpdateJS = selection => element => data => selection.selectAll(element).data(data).update()
-exports.d3ExitJS = selection => element => data => selection.selectAll(element).data(data).exit()
+exports.d3JoinJS = selection => element => data => fns => { 
+  selection.selectAll(element).data(data).join(
+    enter => enter.append(element), // fns.enter
+    update => update,               // fns.update
+    exit => exit.remove()           // fns.exit
+  )
+}
 
-exports.d3EnterWithIndexJS = selection => data => idFunction => selection.data(data, idFunction)
+exports.d3EnterWithIndexJS  = selection => data => idFunction => selection.data(data, idFunction)
 // :: NativeSelection
-exports.nullSelectionJS = null // NB only used on init, maybe still a bad idea
+exports.nullSelectionJS     = null // NB only used on init, maybe still a bad idea
 
 
 //            SIMULATION functions

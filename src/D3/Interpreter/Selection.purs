@@ -3,7 +3,7 @@ module D3.Interpreter.Selection where
 import Control.Monad.State (get, modify_)
 import D3.Base (NativeSelection, Selection(..))
 import D3.Interpreter.Attributes (applyAttr)
-import D3.Interpreter.Foreign (d3AppendElementJS, d3EnterJS, d3SelectAllJS, nullSelectionJS)
+import D3.Interpreter.Foreign (d3AppendElementJS, d3JoinJS, d3SelectAllJS, nullSelectionJS)
 import D3.Interpreter.Types (D3, D3State(..))
 import Data.Array (reverse)
 import Data.Foldable (traverse_)
@@ -34,39 +34,34 @@ run activeSelection selection = do
     (Append r) -> do
       let appendSelection = spy "Append" $ 
                             d3AppendElementJS activeSelection (show r.element)
-      updateScope appendSelection r.label
       traverse_ (applyAttr appendSelection) r.attributes
       traverse_ (run appendSelection) (reverse r.children) -- TODO why reverse children here?
       pure appendSelection
 
-    (Join name element enter update exit (Just projection)) -> do
+    (Join { element, projection, selections}) -> do
       (Context model scope) <- get
       let 
-        joinSelection = spy "Join with projection: " $
-                        d3EnterJS activeSelection (show element) (spy "submodel: " $ projection model)
-      enterSelection  <- run joinSelection enter
-      updateSelection <- run joinSelection update
-      exitSelection   <- run joinSelection exit
-      updateScope enterSelection (Just name)
+        dataForJoin = 
+          case projection of
+            Nothing   -> unsafeCoerce model
+            (Just fn) -> fn model
+        joinSelection = spy "Join1 with projection: " $
+                        d3JoinJS activeSelection (show element) (spy "submodel: " dataForJoin)
+                          { enter: (\ns -> ns), update: (\ns -> ns), exit: (\ns -> ns) }
       pure joinSelection
-    (Join name element enter update exit Nothing) -> do
-      (Context model scope) <- get
-      let 
-        joinSelection = spy "Join without projecting: " $
-                        d3EnterJS activeSelection (show element) (spy "model" $ unsafeCoerce model) -- unsafeCoerce here is effectively "identity"
-      enterSelection  <- run joinSelection enter
-      updateSelection <- run joinSelection update -- if this is NullSelection, no call is made (see NullSelection interpreter below)
-      exitSelection   <- run joinSelection exit   -- if this is NullSelection, no call is made (see NullSelection interpreter below)
 
-      updateScope joinSelection (Just name)
-      pure joinSelection
 
     -- TODO lookup the selection given by name and run interpreter on it with 
     (RunTimeSelection _ _) -> do
       pure activeSelection
 
-    (Transition _) -> do
+    -- (Transition _) -> do
+    --   pure activeSelection
+    (Update _)  -> do
       pure activeSelection
+    (Exit _)  -> do
+      pure activeSelection
+
     NullSelection  -> do
       pure activeSelection
 

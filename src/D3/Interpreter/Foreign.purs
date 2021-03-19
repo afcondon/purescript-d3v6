@@ -1,8 +1,9 @@
 module D3.Interpreter.Foreign where
 
+import D3.Base
 import Prelude
 
-import D3.Base (Attr, EnterUpdateExit, NativeSelection, SimulationConfig)
+import Data.Nullable (Nullable)
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | right upfront we're just going to hand wave over the types given to D3
@@ -22,9 +23,15 @@ foreign import runDatumIndexAttrJS :: forall f. NativeSelection -> String -> f -
 foreign import d3SelectAllJS       ::           String -> NativeSelection
 foreign import d3AppendElementJS   ::           NativeSelection -> String -> NativeSelection
 -- foreign import d3EnterElementJS :: NativeSelection -> String -> NativeSelection
-foreign import d3EnterJS           :: forall d. NativeSelection -> String -> d -> NativeSelection
-foreign import d3UpdateJS          :: forall d. NativeSelection -> String -> d -> NativeSelection
-foreign import d3ExitJS            :: forall d. NativeSelection -> String -> d -> NativeSelection
+foreign import d3JoinJS :: forall d. 
+     NativeSelection
+  -> String
+  -> d
+  -> { enter  :: NativeSelection -> NativeSelection,
+       update :: NativeSelection -> NativeSelection,
+       exit   :: NativeSelection -> NativeSelection }
+  -> NativeSelection
+
 foreign import d3EnterWithIndexJS  :: forall d. NativeSelection -> d -> (d -> NativeJS) -> NativeSelection
 foreign import nullSelectionJS     ::           NativeSelection
 
