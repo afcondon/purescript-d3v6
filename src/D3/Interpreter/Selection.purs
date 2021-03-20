@@ -1,13 +1,14 @@
 module D3.Interpreter.Selection where
 
+import Prelude
+
 import D3.Base (Element(..), NativeSelection, Selection(..))
 import D3.Interpreter.Attributes (applyAttr)
-import D3.Interpreter.Foreign (d3AppendElementJS, d3JoinJS, d3SelectAllJS)
+import D3.Interpreter.Foreign (d3AppendElementJS, d3JoinJS, d3SelectAllJS, nullSelectionJS)
 import Data.Array (reverse)
 import Data.Maybe (Maybe(..))
 import Debug.Trace (spy)
 import Effect.Console (log)
-import Prelude 
 import Unsafe.Coerce (unsafeCoerce)
 
 interpretSelection :: forall model. model -> NativeSelection -> Selection model -> NativeSelection

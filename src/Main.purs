@@ -6,9 +6,12 @@ import Affjax (get) as AJAX
 import Affjax (printError)
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.State (StateT, runStateT)
-import D3.Base (Selection)
-import D3.InterpreterM (D3State(..), initialState, interpretDrag, runInitial, interpretSimulation, interpretTickMap, startSimulation)
+import D3.Base (NativeSelection, Selection)
+import D3.Interpreter (D3State(..), initialState, interpretDrag, interpretSelection, interpretSimulation, interpretTickMap, startSimulation) as I
+import D3.Interpreter (interpretSelection)
+import D3.Interpreter.Foreign (nullSelectionJS)
 import D3.Interpreter.Types (updateState)
+import D3.InterpreterM (D3State(..), initialState, interpretDrag, runInitial, interpretSimulation, interpretTickMap, startSimulation) as IM
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
 import Data.Int (toNumber)
@@ -31,13 +34,13 @@ getWindowWidthHeight = do
   height <- innerHeight win
   pure $ Tuple (toNumber width) (toNumber height)
 
-forceInterpreterM :: Selection Force.Model -> StateT (D3State Force.Model) Effect Unit
+forceInterpreterM :: Selection Force.Model -> StateT (IM.D3State Force.Model) Effect Unit
 forceInterpreterM forceChart = do
-  simulation <- interpretSimulation Force.simulation Force.getNodes Force.getLinks Force.makeModel
-  _ <- runInitial forceChart
-  interpretTickMap simulation Force.myTickMap
-  interpretDrag Force.myDrag
-  startSimulation simulation
+  simulation <- IM.interpretSimulation Force.simulation Force.getNodes Force.getLinks Force.makeModel
+  _ <- IM.runInitial forceChart
+  IM.interpretTickMap simulation Force.myTickMap
+  IM.interpretDrag Force.myDrag
+  IM.startSimulation simulation
   pure unit -- should be we returning the updated Selection? and the Simulation? 
 
 -- TODO take the file reading stuff out so that we can see the essentials
@@ -56,7 +59,7 @@ main = launchAff_ do -- Aff
   let forceModel   = Force.makeModel fileData.links fileData.nodes
 
   _ <- liftEffect $ 
-       runStateT (forceInterpreterM forceChart) (initialState forceModel)
+       runStateT (forceInterpreterM forceChart) (IM.initialState forceModel)
 
   -- then a radial tree
   log "Radial tree example"
@@ -66,18 +69,18 @@ main = launchAff_ do -- Aff
     (Left error) -> liftEffect $ log $ printError error
 
     (Right treeModel) -> liftEffect $ 
-                         runStateT (runInitial treeChart) (initialState treeModel) *> pure unit
+                         runStateT (IM.runInitial treeChart) (IM.initialState treeModel) *> pure unit
 
   -- then the General Update Pattern example
   log "General Update Pattern example"
-  let lettersChart = GUP.chartInit widthHeight'
-  let letters1     = toCharArray "abcdefghijklmnopqrstuvwxyz"
-  let letters2     = toCharArray "acefghiklnpqrtuwyz"
+  let 
+    lettersChart = GUP.chartInit widthHeight'
+    letters1     = toCharArray "abcdefghijklmnopqrstuvwxyz"
+    letters2     = toCharArray "acefghiklnpqrtuwyz"
 
-  (Tuple _ s) <- liftEffect $ 
-                 runStateT (runInitial lettersChart) (initialState letters1)
+    s = I.interpretSelection letters1 nullSelectionJS lettersChart
 
-  _           <- delay $ Milliseconds 2000.0
+  _ <- delay $ Milliseconds 2000.0
 
   -- _           <- liftEffect $
   --                runStateT (runInitial lettersChart) (updateState letters2 s)
