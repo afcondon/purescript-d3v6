@@ -21,6 +21,8 @@ exports.d3SelectAllJS       = selector => d3.selectAll(selector)
 // :: NativeSelection -> String -> NativeSelection
 exports.d3AppendElementJS   = selection => element => selection.append(element)
 // :: forall d. d -> NativeSelection
+exports.d3EnterJS = selection => element => data => selection.selectAll(element).data(data).enter()
+// :: forall d. d -> callbacks -> NativeSelection
 exports.d3JoinJS = selection => element => data => fns => { 
   console.log("d3JoinJS");
   return selection.selectAll(element).data(data).join(fns.enter, fns.update, fns.exit)

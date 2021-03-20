@@ -1,61 +1,59 @@
 module D3.Interpreter.Selection where
 
-import Control.Monad.State (get, modify_)
 import D3.Base (Element(..), NativeSelection, Selection(..))
 import D3.Interpreter.Attributes (applyAttr)
-import D3.Interpreter.Foreign (d3AppendElementJS, d3JoinJS, d3SelectAllJS, nullSelectionJS)
-import D3.Interpreter.Types (D3, D3State(..))
+import D3.Interpreter.Foreign (d3AppendElementJS, d3JoinJS, d3SelectAllJS)
 import Data.Array (reverse)
-import Data.Foldable (traverse_)
-import Data.Map (insert)
 import Data.Maybe (Maybe(..))
 import Debug.Trace (spy)
 import Effect.Console (log)
-import Prelude (Unit, bind, discard, pure, show, unit, ($))
+import Prelude 
 import Unsafe.Coerce (unsafeCoerce)
 
--- TODO fugly, fix later
-runInitial :: forall model. Selection model -> D3 model NativeSelection
-runInitial = case _ of
-  -- selectInDOMion is the only one that we can start with (alt. use IxMonad)
-  s@(InitialSelect r) -> run nullSelectionJS s 
-  -- TODO handle extend selection cases needed for update / re-entrancy
-  -- TODO raise error, or structure differently
-  _ -> pure nullSelectionJS 
-
-run :: forall model. NativeSelection -> Selection model -> D3 model NativeSelection
-run activeSelection selection = do 
-  case selection of
+interpretSelection :: forall model. model -> NativeSelection -> Selection model -> NativeSelection
+interpretSelection model activeSelection = do 
+  case _ of
     (InitialSelect r) -> do
       let root = spy "selectInDOM" $ 
                  d3SelectAllJS r.selector
-      traverse_ (run root) r.children
-      pure root
+          _ = (interpretSelection model root) <$> r.children
+      root
           
     (Append r) -> do
       let appendSelection = spy "Append" $ 
                             d3AppendElementJS activeSelection (show r.element)
-      traverse_ (applyAttr appendSelection) r.attributes
-      traverse_ (run appendSelection) (reverse r.children) -- TODO why reverse children here?
-      pure appendSelection
+          _ = (applyAttr appendSelection) <$> r.attributes
+          _ = (interpretSelection model appendSelection) <$> (reverse r.children) -- TODO why reverse children here?
+      appendSelection
 
     (Join { element, projection, selections }) -> do
-      (Context model scope) <- get
-      let 
-        enterFunction :: forall model. Selection model -> NativeSelection -> D3 model NativeSelection
-        enterFunction selection nativeSelection = run nativeSelection (Append { attributes: [], children: [], element: Text })
-          where
-            _ = log "callback from join enter"
+      let
+        -- in these three callbacks the Selection model is pre-loaded on PureScript side
+        -- and the callback from the join function provides the enter/update/exit selection to act upon
+        -- the callbacks must return the same selection they were given for things to work correctly
+        
+        enterCallback :: Selection model
+            -> (NativeSelection -> NativeSelection) -- JS callback
+        enterCallback selection enterSelection = do
+          let _ = log "callback from join enter"
+          interpretSelection model enterSelection (Append { attributes: [], children: [], element: Text })
 
-        updateFunction :: forall model. Maybe (Selection model) -> NativeSelection -> D3 model NativeSelection
-        updateFunction selection nativeSelection = run nativeSelection (Update { attributes: [], children: [] })
-          where
-            _ = log "callback from join update"
+        updateCallback :: Maybe (Selection model)
+            -> (NativeSelection -> NativeSelection)
+        updateCallback maybeUpdate updateSelection = do
+          let _ = log "callback from join update"
+          case maybeUpdate of
+            (Just update) -> interpretSelection model updateSelection update
+            Nothing       -> updateSelection -- update => update, in D3 terms
 
-        exitFunction :: forall model. Maybe (Selection model) -> NativeSelection -> D3 model NativeSelection
-        exitFunction selection nativeSelection = run nativeSelection (Exit { attributes: [], children: [] })
-          where
-            _ = log "callback from join exit"
+        exitCallback :: Maybe (Selection model)
+            -> (NativeSelection -> NativeSelection)
+        exitCallback maybeExit exitSelection = do
+          let _ = log "callback from join exit"
+          case maybeExit of
+            (Just exit) -> interpretSelection model exitSelection exit
+            Nothing     -> exitSelection -- exit => exit, in D3 terms
+
         dataForJoin = 
           case projection of
             Nothing   -> unsafeCoerce model
@@ -63,31 +61,24 @@ run activeSelection selection = do
 
         joinSelection = spy "Join: " $
                         d3JoinJS activeSelection (show element) (spy "submodel: " dataForJoin)
-                          { enter: enterFunction selections.enter
-                          , update: updateFunction selections.update
-                          , exit: exitFunction selections.exit }
+                          { enter:  enterCallback selections.enter
+                          , update: updateCallback selections.update
+                          , exit:   exitCallback selections.exit }
 
-      pure joinSelection
+      joinSelection
 
 
-    -- TODO lookup the selection given by name and run interpreter on it with 
+    -- TODO lookup the selection given by name and interpret interpretSelectioner on it with 
     (RunTimeSelection _ _) -> do
-      pure activeSelection
+      activeSelection
 
     -- (Transition _) -> do
-    --   pure activeSelection
+    --   activeSelection
     (Update _)  -> do
-      pure activeSelection
+      activeSelection
     (Exit _)  -> do
-      pure activeSelection
+      activeSelection
 
     NullSelection  -> do
-      pure activeSelection
-
-
-
-updateScope :: forall model. NativeSelection -> Maybe String -> D3 model Unit
-updateScope selection Nothing      = pure unit 
-updateScope selection (Just label) =
-  modify_ (\(Context model scope) -> Context model (insert label selection scope))
+      activeSelection
 

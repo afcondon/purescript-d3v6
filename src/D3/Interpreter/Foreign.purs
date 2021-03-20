@@ -22,7 +22,7 @@ foreign import runDatumTextJS      :: forall f. NativeSelection           -> f -
 foreign import runDatumIndexAttrJS :: forall f. NativeSelection -> String -> f -> Unit
 foreign import d3SelectAllJS       ::           String -> NativeSelection
 foreign import d3AppendElementJS   ::           NativeSelection -> String -> NativeSelection
--- foreign import d3EnterElementJS :: NativeSelection -> String -> NativeSelection
+foreign import d3EnterJS :: forall d. NativeSelection -> String -> d -> NativeSelection
 foreign import d3JoinJS :: forall d. 
      NativeSelection
   -> String

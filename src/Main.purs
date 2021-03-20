@@ -7,7 +7,7 @@ import Affjax (printError)
 import Affjax.ResponseFormat as ResponseFormat
 import Control.Monad.State (StateT, runStateT)
 import D3.Base (Selection)
-import D3.Interpreter (D3State(..), initialState, interpretDrag, runInitial, interpretSimulation, interpretTickMap, startSimulation)
+import D3.InterpreterM (D3State(..), initialState, interpretDrag, runInitial, interpretSimulation, interpretTickMap, startSimulation)
 import D3.Interpreter.Types (updateState)
 import Data.Bifunctor (rmap)
 import Data.Either (Either(..))
@@ -31,8 +31,8 @@ getWindowWidthHeight = do
   height <- innerHeight win
   pure $ Tuple (toNumber width) (toNumber height)
 
-forceInterpreter :: Selection Force.Model -> StateT (D3State Force.Model) Effect Unit
-forceInterpreter forceChart = do
+forceInterpreterM :: Selection Force.Model -> StateT (D3State Force.Model) Effect Unit
+forceInterpreterM forceChart = do
   simulation <- interpretSimulation Force.simulation Force.getNodes Force.getLinks Force.makeModel
   _ <- runInitial forceChart
   interpretTickMap simulation Force.myTickMap
@@ -56,7 +56,7 @@ main = launchAff_ do -- Aff
   let forceModel   = Force.makeModel fileData.links fileData.nodes
 
   _ <- liftEffect $ 
-       runStateT (forceInterpreter forceChart) (initialState forceModel)
+       runStateT (forceInterpreterM forceChart) (initialState forceModel)
 
   -- then a radial tree
   log "Radial tree example"
