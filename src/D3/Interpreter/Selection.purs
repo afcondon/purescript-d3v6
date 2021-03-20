@@ -37,7 +37,7 @@ interpretSelection model activeSelection = do
             -> (NativeSelection -> NativeSelection) -- JS callback
         enterCallback selection enterSelection = do
           let _ = log "callback from join enter"
-          interpretSelection model enterSelection (Append { attributes: [], children: [], element: Text })
+          interpretSelection model enterSelection selections.enter
 
         updateCallback :: Maybe (Selection model)
             -> (NativeSelection -> NativeSelection)

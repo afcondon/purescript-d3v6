@@ -78,10 +78,11 @@ main = launchAff_ do -- Aff
     letters1     = toCharArray "abcdefghijklmnopqrstuvwxyz"
     letters2     = toCharArray "acefghiklnpqrtuwyz"
 
-    s = I.interpretSelection letters1 nullSelectionJS lettersChart
+  let _ = I.interpretSelection letters1 nullSelectionJS lettersChart
 
   _ <- delay $ Milliseconds 2000.0
 
+  let _ = I.interpretSelection letters2 nullSelectionJS lettersChart
   -- _           <- liftEffect $
   --                runStateT (runInitial lettersChart) (updateState letters2 s)
   -- TODO now we need to use the monadic context inside StateT to (repeatedly) add the GUP.chartUpdate
